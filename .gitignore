@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+package-lock.json
+yarn.lock
+
+# Hardhat (si se agregan tests)
+artifacts/
+cache/
+typechain-types/
+coverage/
+coverage.json
+
+# Variables de entorno y secretos (NUNCA commitear claves privadas)
+.env
+.env.*
+*.key
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Build/deploy
+.vercel
