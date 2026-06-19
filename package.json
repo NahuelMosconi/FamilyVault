@@ -1,0 +1,16 @@
+{
+  "name": "familyvault",
+  "version": "1.0.0",
+  "description": "Bóveda Familiar — fondo de emergencia multifirma (M de N) en Ethereum/Sepolia.",
+  "private": true,
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile"
+  },
+  "keywords": ["ethereum", "solidity", "multifirma", "dapp", "sepolia"],
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  }
+}
