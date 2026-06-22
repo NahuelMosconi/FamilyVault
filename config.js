@@ -29,11 +29,11 @@ const NETWORK = {
 // direcciones tienen que coincidir con los guardianes/beneficiario del contrato.
 // Si una dirección no está acá, la app muestra la versión corta de la dirección.
 const NOMBRES = {
-  "0x5ee33e9620bd81e015495e843ac872638b770bb2": "Mamá",
-  "0xbb4b0bd424404df8c7c895fc5a28f8312185a722": "Papá",
-  "0xc669853a3d653ebf53c91fd8b314718b58360f1e": "Hermano",
-  "0xceaf76c2bdb257dbffefcbc2619b298e67a4fc6c": "Hermana",
-  "0xbe6d2750c982d27b5b176e7d348cef6e4018f9ab": "Abuela (beneficiaria)",
+  "0x5ee33e9620bd81e015495e843ac872638b770bb2": "Nahuel",
+  "0xbb4b0bd424404df8c7c895fc5a28f8312185a722": "Lucas",
+  "0xc669853a3d653ebf53c91fd8b314718b58360f1e": "Ignacio",
+  "0xceaf76c2bdb257dbffefcbc2619b298e67a4fc6c": "Adriano",
+  "0xbe6d2750c982d27b5b176e7d348cef6e4018f9ab": "GRUPAL (beneficiaria)",
 };
 
 // ── ABI del contrato (espejo de contract/FamilyVault.abi.json) ─────────────
