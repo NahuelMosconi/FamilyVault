@@ -8,7 +8,8 @@ const { ethers } = require("hardhat");
  *  - Depósito de fondos al contrato.
  *  - Solo los guardianes pueden crear/aprobar reclamos (control de acceso).
  *  - Un guardián no puede aprobar dos veces el mismo reclamo.
- *  - Los fondos se liberan recién al alcanzar el umbral M (y van al beneficiario).
+ *  - Los fondos se liberan recién al alcanzar el umbral M, y van al SOLICITANTE
+ *    del reclamo (no a un beneficiario fijo).
  *  - El reclamo recorre correctamente la máquina de estados.
  */
 describe("FamilyVault", function () {
@@ -18,25 +19,20 @@ describe("FamilyVault", function () {
   const LIBERADO = 3n;
 
   let vault;
-  let admin, g1, g2, g3, beneficiario, extrano;
+  let admin, g1, g2, g3, extrano;
 
   beforeEach(async function () {
-    [admin, g1, g2, g3, beneficiario, extrano] = await ethers.getSigners();
+    [admin, g1, g2, g3, extrano] = await ethers.getSigners();
 
     const Vault = await ethers.getContractFactory("FamilyVault");
-    // Umbral 2 de 3 guardianes.
-    vault = await Vault.deploy(
-      [g1.address, g2.address, g3.address],
-      2,
-      beneficiario.address
-    );
+    // Umbral 2 de 3 guardianes. Ya no hay beneficiario fijo.
+    vault = await Vault.deploy([g1.address, g2.address, g3.address], 2);
     await vault.waitForDeployment();
   });
 
   describe("Despliegue y configuración", function () {
-    it("guarda guardianes, umbral y beneficiario", async function () {
+    it("guarda guardianes y umbral", async function () {
       expect(await vault.umbral()).to.equal(2n);
-      expect(await vault.beneficiario()).to.equal(beneficiario.address);
       expect(await vault.cantidadGuardianes()).to.equal(3n);
       expect(await vault.esGuardian(g1.address)).to.equal(true);
       expect(await vault.esGuardian(extrano.address)).to.equal(false);
@@ -45,14 +41,14 @@ describe("FamilyVault", function () {
     it("rechaza un umbral mayor que la cantidad de guardianes", async function () {
       const Vault = await ethers.getContractFactory("FamilyVault");
       await expect(
-        Vault.deploy([g1.address, g2.address], 3, beneficiario.address)
+        Vault.deploy([g1.address, g2.address], 3)
       ).to.be.revertedWith("FamilyVault: umbral invalido");
     });
 
     it("rechaza guardianes duplicados", async function () {
       const Vault = await ethers.getContractFactory("FamilyVault");
       await expect(
-        Vault.deploy([g1.address, g1.address], 1, beneficiario.address)
+        Vault.deploy([g1.address, g1.address], 1)
       ).to.be.revertedWith("FamilyVault: guardian duplicado");
     });
   });
@@ -86,6 +82,7 @@ describe("FamilyVault", function () {
 
       const r = await vault.obtenerReclamo(0);
       expect(r.descripcion).to.equal("Accidente");
+      expect(r.solicitante).to.equal(g1.address);
       expect(r.estado).to.equal(ABIERTO);
       expect(r.aprobaciones).to.equal(0n);
     });
@@ -108,6 +105,7 @@ describe("FamilyVault", function () {
 
     beforeEach(async function () {
       await vault.connect(g1).depositar({ value: ethers.parseEther("1.0") });
+      // g1 es el SOLICITANTE: a él van a ir los fondos al liberarse.
       await vault.connect(g1).crearReclamo("Emergencia medica", ethers.ZeroHash, MONTO);
     });
 
@@ -129,19 +127,22 @@ describe("FamilyVault", function () {
         .to.be.revertedWith("FamilyVault: ya aprobaste");
     });
 
-    it("libera los fondos al beneficiario al alcanzar el umbral", async function () {
-      const antes = await ethers.provider.getBalance(beneficiario.address);
+    it("libera los fondos al SOLICITANTE al alcanzar el umbral", async function () {
+      await vault.connect(g1).aprobar(0); // 1/2 -> Pendiente (g1 paga gas acá)
 
-      await vault.connect(g1).aprobar(0); // 1/2 -> Pendiente
+      // Medimos el balance del solicitante (g1) justo antes de la liberación.
+      const antes = await ethers.provider.getBalance(g1.address);
 
-      // La segunda aprobación alcanza el umbral 2/2 y libera.
+      // La segunda aprobación (g2) alcanza el umbral 2/2 y libera hacia g1.
       await expect(vault.connect(g2).aprobar(0))
-        .to.emit(vault, "FondosLiberados");
+        .to.emit(vault, "FondosLiberados")
+        .withArgs(0, g1.address, MONTO);
 
       const r = await vault.obtenerReclamo(0);
       expect(r.estado).to.equal(LIBERADO);
 
-      const despues = await ethers.provider.getBalance(beneficiario.address);
+      // g1 no pagó gas en la tx de g2, así que recibe exactamente MONTO.
+      const despues = await ethers.provider.getBalance(g1.address);
       expect(despues - antes).to.equal(MONTO);
 
       // El balance del contrato bajó en el monto liberado.
@@ -156,10 +157,10 @@ describe("FamilyVault", function () {
     });
 
     it("NO libera fondos antes de alcanzar el umbral", async function () {
-      const antes = await ethers.provider.getBalance(beneficiario.address);
-      await vault.connect(g1).aprobar(0); // solo 1/2
-      const despues = await ethers.provider.getBalance(beneficiario.address);
-      expect(despues).to.equal(antes); // sin cambios
+      const antes = await ethers.provider.getBalance(g1.address);
+      await vault.connect(g2).aprobar(0); // solo 1/2 (aprueba g2, no g1)
+      const despues = await ethers.provider.getBalance(g1.address);
+      expect(despues).to.equal(antes); // g1 no recibió nada
       expect(await vault.balance()).to.equal(ethers.parseEther("1.0"));
     });
   });

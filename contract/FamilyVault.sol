@@ -25,7 +25,7 @@ pragma solidity ^0.8.20;
  *         - Abierto:   reclamo recién creado, 0 aprobaciones.
  *         - Pendiente: tiene al menos 1 aprobación pero todavía no llega al umbral.
  *         - Aprobado:  alcanzó el umbral M; estado transitorio previo a transferir.
- *         - Liberado:  estado final; los fondos ya se enviaron al beneficiario.
+ *         - Liberado:  estado final; los fondos ya se enviaron al solicitante.
  *
  *         En la práctica, al alcanzar el umbral el contrato avanza de Aprobado a
  *         Liberado dentro de la misma transacción (atómicamente), aplicando el
@@ -49,7 +49,7 @@ contract FamilyVault {
         address solicitante;     // guardián que abrió el reclamo
         string descripcion;      // descripción del evento de emergencia
         bytes32 hashEvidencia;   // hash opcional de la evidencia (0x0 si no hay)
-        uint256 monto;           // monto que se libera al beneficiario
+        uint256 monto;           // monto que se libera al solicitante
         uint256 aprobaciones;    // contador de aprobaciones
         EstadoReclamo estado;    // estado actual en la máquina de estados
         uint256 creadoEn;        // timestamp de creación
@@ -61,9 +61,6 @@ contract FamilyVault {
 
     /// @notice Administrador que desplegó y configuró el contrato.
     address public admin;
-
-    /// @notice Dirección que recibe los fondos cuando un reclamo se libera.
-    address public beneficiario;
 
     /// @notice Cantidad de aprobaciones necesarias para liberar (el "M" de M de N).
     uint256 public umbral;
@@ -102,9 +99,10 @@ contract FamilyVault {
         uint256 aprobaciones,
         uint256 umbral
     );
+    /// @dev El destino es el propio solicitante del reclamo (quien pidió la ayuda).
     event FondosLiberados(
         uint256 indexed idReclamo,
-        address indexed beneficiario,
+        address indexed destino,
         uint256 monto
     );
 
@@ -146,27 +144,24 @@ contract FamilyVault {
     /**
      * @param _guardianes  Direcciones de los integrantes de la familia (N).
      * @param _umbral      Cantidad de aprobaciones necesarias (M). 1 <= M <= N.
-     * @param _beneficiario Dirección que recibe los fondos al liberarse un reclamo.
      *
-     * @dev Validamos la configuración en el constructor para que el contrato no
-     *      pueda desplegarse en un estado inconsistente (p. ej. umbral mayor que
-     *      la cantidad de guardianes, o guardianes duplicados / dirección cero).
+     * @dev No hay beneficiario fijo: cuando un reclamo se libera, los fondos van
+     *      a quien lo solicitó (el solicitante). Validamos la configuración para
+     *      que el contrato no pueda desplegarse en un estado inconsistente
+     *      (umbral mayor que la cantidad de guardianes, duplicados, dirección cero).
      */
     constructor(
         address[] memory _guardianes,
-        uint256 _umbral,
-        address _beneficiario
+        uint256 _umbral
     ) {
         require(_guardianes.length > 0, "FamilyVault: sin guardianes");
         require(
             _umbral > 0 && _umbral <= _guardianes.length,
             "FamilyVault: umbral invalido"
         );
-        require(_beneficiario != address(0), "FamilyVault: beneficiario cero");
 
         admin = msg.sender;
         umbral = _umbral;
-        beneficiario = _beneficiario;
 
         // Registramos cada guardián evitando duplicados y la dirección cero.
         for (uint256 i = 0; i < _guardianes.length; i++) {
@@ -279,10 +274,12 @@ contract FamilyVault {
             // ventana de reentrancy ANTES de mover el dinero.
             r.estado = EstadoReclamo.Liberado;
 
-            emit FondosLiberados(idReclamo, beneficiario, monto);
+            // El destino es el solicitante del reclamo (quien pidió la ayuda).
+            address destino = r.solicitante;
+            emit FondosLiberados(idReclamo, destino, monto);
 
-            // INTERACTION — transferencia al beneficiario al final de todo.
-            (bool ok, ) = payable(beneficiario).call{value: monto}("");
+            // INTERACTION — transferencia al solicitante al final de todo.
+            (bool ok, ) = payable(destino).call{value: monto}("");
             require(ok, "FamilyVault: transferencia fallo");
         }
     }
