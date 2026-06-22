@@ -99,6 +99,29 @@ function mensajeDeError(err) {
 //  CONEXIÓN A LA WALLET
 // ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * Conexión disparada por el botón. A diferencia de la reconexión silenciosa,
+ * abre el SELECTOR DE CUENTAS de MetaMask (wallet_requestPermissions) para que
+ * puedas elegir con qué integrante conectarte o conectar cuentas nuevas. Esto
+ * permite, en la demo, cambiar de "Nahuel" a "Lucas" y probar el aprobar.
+ */
+async function conectarDesdeBoton() {
+  if (typeof window.ethereum === "undefined") {
+    mostrarAviso("No se detectó MetaMask. Instalá la extensión para usar la dApp.", true);
+    return;
+  }
+  try {
+    // Fuerza el selector de cuentas aunque ya haya una conectada.
+    await window.ethereum.request({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+  } catch (_) {
+    // El usuario cerró el selector sin elegir: seguimos con lo que haya.
+  }
+  await conectarWallet();
+}
+
 async function conectarWallet() {
   if (typeof window.ethereum === "undefined") {
     mostrarAviso("No se detectó MetaMask. Instalá la extensión para usar la dApp.", true);
@@ -115,7 +138,7 @@ async function conectarWallet() {
     $("cuenta").textContent = nombreDe(cuentaActual);
     $("cuenta").title = cuentaActual; // la dirección completa queda en el tooltip
     $("cuenta").hidden = false;
-    $("btn-conectar").textContent = "Conectado";
+    $("btn-conectar").textContent = "Cambiar cuenta";
 
     await verificarRed();
     await inicializarContrato();
@@ -466,7 +489,7 @@ async function aprobarReclamo(id) {
 // ───────────────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  $("btn-conectar").addEventListener("click", conectarWallet);
+  $("btn-conectar").addEventListener("click", conectarDesdeBoton);
   $("btn-depositar").addEventListener("click", depositar);
   $("btn-crear-reclamo").addEventListener("click", crearReclamo);
   $("btn-refrescar").addEventListener("click", refrescarTodo);
