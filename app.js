@@ -61,13 +61,11 @@ function nombreDe(dir) {
   return nombre || acortar(dir);
 }
 
-function agregarEvento(texto, txHash) {
-  const ul = $("log-eventos");
-  const vacio = ul.querySelector(".vacio");
-  if (vacio) vacio.remove();
+/** Construye un <li> de evento para el historial. */
+function crearLiEvento(texto, txHash, fechaMs) {
   const li = document.createElement("li");
-  const hora = new Date().toLocaleTimeString("es-AR");
-  li.innerHTML = `<strong>${hora}</strong> · ${texto}`;
+  const cuando = fechaMs ? new Date(fechaMs).toLocaleString("es-AR") : new Date().toLocaleString("es-AR");
+  li.innerHTML = `<strong>${cuando}</strong> · ${texto}`;
   if (txHash) {
     const a = document.createElement("a");
     a.href = `${NETWORK.explorador}/tx/${txHash}`;
@@ -77,7 +75,73 @@ function agregarEvento(texto, txHash) {
     a.textContent = " ↗ ver tx";
     li.appendChild(a);
   }
-  ul.prepend(li);
+  return li;
+}
+
+/**
+ * Arma el texto de un evento (ya sea histórico o en vivo) a partir de sus args.
+ */
+function textoDeEvento(nombre, a) {
+  switch (nombre) {
+    case "Deposito":
+      return `💰 Depósito de ${ethers.formatEther(a.monto)} ETH por ${nombreDe(a.origen)}`;
+    case "ReclamoCreado":
+      return `🚨 Reclamo #${a.idReclamo} creado por ${nombreDe(a.solicitante)} — motivo: "${escaparHtml(a.descripcion)}" (pide ${ethers.formatEther(a.monto)} ETH)`;
+    case "Aprobacion":
+      return `✍️ Aprobación de ${nombreDe(a.guardian)} en reclamo #${a.idReclamo} (${a.aprobaciones}/${a.umbral})`;
+    case "FondosLiberados":
+      return `✅ Reclamo #${a.idReclamo} LIBERADO: ${ethers.formatEther(a.monto)} ETH → ${nombreDe(a.destino)}`;
+    default:
+      return "Evento";
+  }
+}
+
+/**
+ * Carga TODO el historial leyendo los eventos pasados del contrato desde la
+ * blockchain (queryFilter). Así el historial persiste aunque recargues la página.
+ * Muestra depósitos (quién, cuánto) y reclamos (cuándo, motivo, monto, destino).
+ */
+async function cargarHistorial() {
+  if (!contratoLectura) return;
+  const ul = $("log-eventos");
+  try {
+    const nombres = ["Deposito", "ReclamoCreado", "Aprobacion", "FondosLiberados"];
+    const listas = await Promise.all(nombres.map((n) => contratoLectura.queryFilter(n)));
+    // Aplanamos guardando el nombre del evento junto a cada log.
+    const eventos = [];
+    listas.forEach((lista, i) => lista.forEach((ev) => eventos.push({ ev, nombre: nombres[i] })));
+
+    if (eventos.length === 0) {
+      ul.innerHTML = `<li class="vacio">Todavía no hay actividad. Hacé un depósito para empezar.</li>`;
+      return;
+    }
+
+    // Orden cronológico descendente (lo más nuevo arriba).
+    eventos.sort((x, y) =>
+      (y.ev.blockNumber - x.ev.blockNumber) || (y.ev.index - x.ev.index)
+    );
+
+    // Buscamos el timestamp de cada bloque (con caché para no repetir llamadas).
+    const cacheBloques = {};
+    async function tsDe(blockNumber) {
+      if (cacheBloques[blockNumber] === undefined) {
+        const b = await provider.getBlock(blockNumber);
+        cacheBloques[blockNumber] = b ? b.timestamp * 1000 : null;
+      }
+      return cacheBloques[blockNumber];
+    }
+
+    ul.innerHTML = "";
+    for (const { ev, nombre } of eventos) {
+      const ms = await tsDe(ev.blockNumber);
+      ul.appendChild(crearLiEvento(textoDeEvento(nombre, ev.args), ev.transactionHash, ms));
+    }
+  } catch (err) {
+    // Algunos RPC limitan el rango de getLogs; no es crítico para operar.
+    if (ul.querySelector(".vacio")) {
+      ul.innerHTML = `<li class="vacio">No se pudo cargar el historial (el RPC limitó la consulta).</li>`;
+    }
+  }
 }
 
 /**
@@ -232,29 +296,19 @@ function habilitarControles(activo) {
 }
 
 /**
- * Suscribe los listeners de eventos del contrato para reflejarlos en vivo.
+ * Suscribe listeners de eventos para que, cuando OTRO integrante haga algo
+ * (depósito, reclamo, aprobación, liberación), la UI se actualice sola.
+ * El historial se rearma siempre desde la cadena (cargarHistorial) para no
+ * duplicar entradas.
  */
 function suscribirEventos() {
   if (!contratoLectura) return;
   contratoLectura.removeAllListeners();
-
-  contratoLectura.on("Deposito", (origen, monto) => {
-    agregarEvento(`💰 Depósito de ${ethers.formatEther(monto)} ETH por ${nombreDe(origen)}`);
-    refrescarFondo();
-  });
-  contratoLectura.on("ReclamoCreado", (id, solicitante, descripcion) => {
-    agregarEvento(`🚨 Reclamo #${id} creado por ${nombreDe(solicitante)}: "${descripcion}"`);
-    refrescarReclamos();
-  });
-  contratoLectura.on("Aprobacion", (id, guardian, aprobaciones, umbral) => {
-    agregarEvento(`✍️ Aprobación de ${nombreDe(guardian)} en reclamo #${id} (${aprobaciones}/${umbral})`);
-    refrescarReclamos();
-  });
-  contratoLectura.on("FondosLiberados", (id, beneficiario, monto) => {
-    agregarEvento(`✅ Reclamo #${id} LIBERADO: ${ethers.formatEther(monto)} ETH → ${nombreDe(beneficiario)}`);
-    refrescarFondo();
-    refrescarReclamos();
-  });
+  const alCambiar = () => refrescarTodo();
+  contratoLectura.on("Deposito", alCambiar);
+  contratoLectura.on("ReclamoCreado", alCambiar);
+  contratoLectura.on("Aprobacion", alCambiar);
+  contratoLectura.on("FondosLiberados", alCambiar);
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -264,23 +318,21 @@ function suscribirEventos() {
 async function refrescarTodo() {
   await refrescarFondo();
   await refrescarReclamos();
+  await cargarHistorial();
 }
 
 async function refrescarFondo() {
   if (!contratoLectura) return;
   try {
-    const [bal, umbral, beneficiario, admin, guardianes] = await Promise.all([
+    const [bal, umbral, admin, guardianes] = await Promise.all([
       contratoLectura.balance(),
       contratoLectura.umbral(),
-      contratoLectura.beneficiario(),
       contratoLectura.admin(),
       contratoLectura.obtenerGuardianes(),
     ]);
 
     $("balance").textContent = `${ethers.formatEther(bal)} ETH`;
     $("umbral").textContent = `${Number(umbral)} de ${guardianes.length}`;
-    $("beneficiario").textContent = nombreDe(beneficiario);
-    $("beneficiario").title = beneficiario;
     $("admin").textContent = nombreDe(admin);
     $("admin").title = admin;
 
@@ -374,6 +426,7 @@ async function renderReclamo(id, datos, umbral) {
     </div>
     <div class="reclamo-meta">
       <span>💵 Monto a liberar: <strong>${ethers.formatEther(monto)} ETH</strong></span>
+      <span>📤 Se libera a: <strong>${escaparHtml(nombreDe(solicitante))}</strong> <span class="mono" style="opacity:.6">${acortar(solicitante)}</span></span>
       <span>🕒 Creado: ${fecha}</span>
       ${evidencia}
     </div>
@@ -426,9 +479,8 @@ async function depositar() {
     const tx = await contrato.depositar({ value: ethers.parseEther(valor) });
     mostrarOverlay("Minando el depósito en Sepolia…");
     await tx.wait();
-    agregarEvento(`💰 Depósito de ${valor} ETH enviado`, tx.hash);
     $("input-deposito").value = "";
-    await refrescarFondo();
+    await refrescarTodo();
   } catch (err) {
     mostrarAviso(mensajeDeError(err), true);
   } finally {
@@ -455,12 +507,11 @@ async function crearReclamo() {
     const tx = await contrato.crearReclamo(descripcion, hashEvidencia, ethers.parseEther(montoStr));
     mostrarOverlay("Registrando el reclamo en Sepolia…");
     await tx.wait();
-    agregarEvento(`🚨 Reclamo creado: "${descripcion}"`, tx.hash);
     $("input-descripcion").value = "";
     $("input-monto-reclamo").value = "";
     $("input-evidencia").value = "";
     $("hash-preview").textContent = "";
-    await refrescarReclamos();
+    await refrescarTodo();
   } catch (err) {
     mostrarAviso(mensajeDeError(err), true);
   } finally {
@@ -475,7 +526,6 @@ async function aprobarReclamo(id) {
     const tx = await contrato.aprobar(id);
     mostrarOverlay("Registrando la aprobación en Sepolia…");
     await tx.wait();
-    agregarEvento(`✍️ Aprobaste el reclamo #${id}`, tx.hash);
     await refrescarTodo();
   } catch (err) {
     mostrarAviso(mensajeDeError(err), true);
