@@ -166,8 +166,8 @@ generar documentación. Detalle en la memoria técnica, sección 4.
 ## 🔗 Enlaces y entregables (completar)
 
 - **Repositorio:** `[link al repo de GitHub]`
-- **Contrato desplegado (Sepolia):** `0x59B2d141Dfe1d79d10C5Eb61822d2269be41BC1f`
-  → [ver en Etherscan](https://sepolia.etherscan.io/address/0x59B2d141Dfe1d79d10C5Eb61822d2269be41BC1f)
+- **Contrato desplegado (Sepolia):** `0xFEA4dca7466DA64cA8f4928F6541cA445B49102d`
+  → [ver en Etherscan](https://sepolia.etherscan.io/address/0xFEA4dca7466DA64cA8f4928F6541cA445B49102d)
 - **dApp en vivo (Vercel):** `[link de la URL pública]`
 - **Video de la demo:** `[link al video]`
 
