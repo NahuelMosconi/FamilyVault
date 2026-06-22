@@ -50,6 +50,17 @@ function acortar(dir) {
   return dir.slice(0, 6) + "…" + dir.slice(-4);
 }
 
+/**
+ * Devuelve el nombre del integrante si está cargado en NOMBRES (config.js);
+ * si no, devuelve la dirección acortada. Así la UI muestra "Mamá" en vez de
+ * "0x5eE3…0BB2".
+ */
+function nombreDe(dir) {
+  if (!dir) return "—";
+  const nombre = (typeof NOMBRES !== "undefined") ? NOMBRES[dir.toLowerCase()] : null;
+  return nombre || acortar(dir);
+}
+
 function agregarEvento(texto, txHash) {
   const ul = $("log-eventos");
   const vacio = ul.querySelector(".vacio");
@@ -100,8 +111,9 @@ async function conectarWallet() {
     signer = await provider.getSigner();
     cuentaActual = (await signer.getAddress()).toLowerCase();
 
-    // Mostrar la cuenta conectada
-    $("cuenta").textContent = acortar(cuentaActual);
+    // Mostrar la cuenta conectada (nombre del integrante si está cargado)
+    $("cuenta").textContent = nombreDe(cuentaActual);
+    $("cuenta").title = cuentaActual; // la dirección completa queda en el tooltip
     $("cuenta").hidden = false;
     $("btn-conectar").textContent = "Conectado";
 
@@ -204,19 +216,19 @@ function suscribirEventos() {
   contratoLectura.removeAllListeners();
 
   contratoLectura.on("Deposito", (origen, monto) => {
-    agregarEvento(`💰 Depósito de ${ethers.formatEther(monto)} ETH por ${acortar(origen)}`);
+    agregarEvento(`💰 Depósito de ${ethers.formatEther(monto)} ETH por ${nombreDe(origen)}`);
     refrescarFondo();
   });
   contratoLectura.on("ReclamoCreado", (id, solicitante, descripcion) => {
-    agregarEvento(`🚨 Reclamo #${id} creado por ${acortar(solicitante)}: "${descripcion}"`);
+    agregarEvento(`🚨 Reclamo #${id} creado por ${nombreDe(solicitante)}: "${descripcion}"`);
     refrescarReclamos();
   });
   contratoLectura.on("Aprobacion", (id, guardian, aprobaciones, umbral) => {
-    agregarEvento(`✍️ Aprobación de ${acortar(guardian)} en reclamo #${id} (${aprobaciones}/${umbral})`);
+    agregarEvento(`✍️ Aprobación de ${nombreDe(guardian)} en reclamo #${id} (${aprobaciones}/${umbral})`);
     refrescarReclamos();
   });
   contratoLectura.on("FondosLiberados", (id, beneficiario, monto) => {
-    agregarEvento(`✅ Reclamo #${id} LIBERADO: ${ethers.formatEther(monto)} ETH → ${acortar(beneficiario)}`);
+    agregarEvento(`✅ Reclamo #${id} LIBERADO: ${ethers.formatEther(monto)} ETH → ${nombreDe(beneficiario)}`);
     refrescarFondo();
     refrescarReclamos();
   });
@@ -244,8 +256,10 @@ async function refrescarFondo() {
 
     $("balance").textContent = `${ethers.formatEther(bal)} ETH`;
     $("umbral").textContent = `${Number(umbral)} de ${guardianes.length}`;
-    $("beneficiario").textContent = beneficiario;
-    $("admin").textContent = admin;
+    $("beneficiario").textContent = nombreDe(beneficiario);
+    $("beneficiario").title = beneficiario;
+    $("admin").textContent = nombreDe(admin);
+    $("admin").title = admin;
 
     // ¿La cuenta conectada es guardián?
     soyGuardian = guardianes.some((g) => g.toLowerCase() === cuentaActual);
@@ -257,7 +271,11 @@ async function refrescarFondo() {
     guardianes.forEach((g) => {
       const li = document.createElement("li");
       const esYo = g.toLowerCase() === cuentaActual;
-      li.innerHTML = `<span>${g}</span>` + (esYo ? `<span class="etiqueta-yo">vos</span>` : "");
+      // Mostramos el nombre del integrante y, en chico, su dirección.
+      li.innerHTML =
+        `<span><strong>${escaparHtml(nombreDe(g))}</strong> ` +
+        `<span class="mono" style="opacity:.6">${acortar(g)}</span></span>` +
+        (esYo ? `<span class="etiqueta-yo">vos</span>` : "");
       ul.appendChild(li);
     });
 
@@ -326,7 +344,7 @@ async function renderReclamo(id, datos, umbral) {
   div.innerHTML = `
     <div class="reclamo-head">
       <div>
-        <div class="reclamo-id">Reclamo #${id} · abierto por ${acortar(solicitante)}</div>
+        <div class="reclamo-id">Reclamo #${id} · abierto por ${escaparHtml(nombreDe(solicitante))}</div>
         <p class="reclamo-desc">${escaparHtml(descripcion)}</p>
       </div>
       <span class="estado ${CLASE_ESTADO[estado]}">${NOMBRE_ESTADO[estado]}</span>
@@ -467,5 +485,19 @@ document.addEventListener("DOMContentLoaded", () => {
       "⚙️ Recordá completar CONTRACT_ADDRESS en config.js con la dirección del contrato desplegado en Sepolia.",
       false
     );
+  }
+
+  // Reconexión automática: si esta wallet ya autorizó el sitio antes, nos
+  // conectamos solos al recargar (sin abrir el popup de MetaMask). Usamos
+  // eth_accounts, que NO pide permiso (a diferencia de eth_requestAccounts).
+  if (typeof window.ethereum !== "undefined") {
+    window.ethereum
+      .request({ method: "eth_accounts" })
+      .then((cuentas) => {
+        if (cuentas && cuentas.length > 0) {
+          conectarWallet();
+        }
+      })
+      .catch(() => { /* sin permisos previos: el usuario tendrá que conectar a mano */ });
   }
 });
