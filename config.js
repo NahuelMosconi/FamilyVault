@@ -23,6 +23,19 @@ const NETWORK = {
   explorador: "https://sepolia.etherscan.io",
 };
 
+// ── Nombres de los integrantes de la familia ───────────────────────────────
+// Mapea cada dirección (en minúsculas) a un nombre legible, para que la dApp
+// muestre "Mamá" en vez de "0x5eE3…0BB2". Editá los nombres como quieras; las
+// direcciones tienen que coincidir con los guardianes/beneficiario del contrato.
+// Si una dirección no está acá, la app muestra la versión corta de la dirección.
+const NOMBRES = {
+  "0x5ee33e9620bd81e015495e843ac872638b770bb2": "Mamá",
+  "0xbb4b0bd424404df8c7c895fc5a28f8312185a722": "Papá",
+  "0xc669853a3d653ebf53c91fd8b314718b58360f1e": "Hermano",
+  "0xceaf76c2bdb257dbffefcbc2619b298e67a4fc6c": "Hermana",
+  "0xbe6d2750c982d27b5b176e7d348cef6e4018f9ab": "Abuela (beneficiaria)",
+};
+
 // ── ABI del contrato (espejo de contract/FamilyVault.abi.json) ─────────────
 const CONTRACT_ABI = [
   {
