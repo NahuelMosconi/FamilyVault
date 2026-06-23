@@ -553,6 +553,19 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-crear-reclamo").addEventListener("click", crearReclamo);
   $("btn-refrescar").addEventListener("click", refrescarTodo);
 
+  // Tema claro/oscuro. El tema ya se aplicó en <head> (anti-parpadeo);
+  // acá sincronizamos el ícono del botón y manejamos el toggle.
+  const sincronizarIconoTema = () => {
+    const esClaro = document.documentElement.classList.contains("light");
+    $("btn-tema").textContent = esClaro ? "🌙" : "☀️";
+  };
+  sincronizarIconoTema();
+  $("btn-tema").addEventListener("click", () => {
+    const esClaro = document.documentElement.classList.toggle("light");
+    try { localStorage.setItem("fv-tema", esClaro ? "light" : "dark"); } catch (e) {}
+    sincronizarIconoTema();
+  });
+
   // Sidebar: resaltar el ítem activo al navegar entre secciones.
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", () => {
