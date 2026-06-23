@@ -59,10 +59,10 @@ custodio único ni de un banco: exactamente lo que ofrece un contrato inteligent
   depositar, reportar emergencias, aprobar y ver el estado del fondo en vivo.
 
 ### Funcionamiento general
-La familia despliega el contrato definiendo tres cosas: el conjunto de
-**guardianes** (las direcciones de los integrantes, el "N"), el **umbral M** de
-aprobaciones necesarias, y el **beneficiario** que recibe los fondos. A partir de
-ahí:
+La familia despliega el contrato definiendo dos cosas: el conjunto de
+**guardianes** (las direcciones de los integrantes, el "N") y el **umbral M** de
+aprobaciones necesarias. No hay beneficiario fijo: los fondos van a **quien crea el
+reclamo**. A partir de ahí:
 
 1. Cualquiera **deposita** ETH al fondo.
 2. Un guardián **crea un reclamo** describiendo la emergencia (con hash de
@@ -70,7 +70,7 @@ ahí:
 3. Los guardianes **aprueban**. Cada aprobación es una firma criptográfica con su
    clave privada.
 4. Al alcanzar **M aprobaciones**, el contrato **transfiere automáticamente** los
-   fondos al beneficiario y lo registra públicamente.
+   fondos **al solicitante** y lo registra públicamente.
 
 ### Características
 - **No-custodial:** nadie externo —ni siquiera nosotros— controla el dinero.
@@ -97,25 +97,31 @@ El MVP está **funcional de punta a punta sobre la testnet Sepolia**:
   hash de evidencia opcional y monto.
 - ✅ **Aprobación** por guardianes (`aprobar`), con **anti doble-aprobación** y
   control de acceso.
-- ✅ **Liberación automática** de fondos al beneficiario al alcanzar el umbral,
-  con patrón **checks-effects-interactions**.
-- ✅ **Frontend completo:** conexión MetaMask, detección de red (avisa si no es
-  Sepolia), panel del fondo (balance, guardianes, umbral, beneficiario), depósito,
-  reporte de emergencia con cálculo de hash en el navegador, lista de reclamos con
-  estado y progreso, botón "Aprobar" habilitado solo para guardianes que aún no
-  aprobaron, estados de carga y manejo de errores claros.
-- ✅ **Eventos en vivo:** la UI escucha los eventos del contrato y muestra la
-  actividad con links a Etherscan.
+- ✅ **Liberación automática** de fondos **al solicitante** del reclamo al alcanzar
+  el umbral, con patrón **checks-effects-interactions** (no hay beneficiario fijo).
+- ✅ **Cancelación** de reclamos (`cancelarReclamo`) por el solicitante o el admin,
+  con un estado `Cancelado` que enriquece la máquina de estados.
+- ✅ **Meta de ahorro** del fondo (`fijarMeta`) con barra de progreso.
+- ✅ **Recuperación social de guardianes** (`proponerRotacion`/`aprobarRotacion`):
+  reemplazar por consenso a un guardián que perdió su clave (segunda máquina de estados).
+- ✅ **Fábrica multi-familia** (`FamilyVaultFactory`): cualquier familia crea su
+  propia bóveda con un llamado — habilita el uso masivo sin base de datos central.
+- ✅ **Frontend completo (SaaS):** conexión MetaMask, detección de red, dashboard con
+  métricas, depósito, reporte de emergencia con hash en el navegador, lista de reclamos
+  filtrable, cancelar, meta, aportes por integrante, recuperación de guardianes,
+  notificaciones (toasts) y confeti al liberar, tema claro/oscuro y manejo de errores.
+- ✅ **Historial on-chain** que persiste al recargar (lee eventos pasados) + estadísticas.
+- ✅ **Tests (Hardhat): 27 pruebas**, incluido un **test de reentrancy** con contrato atacante.
 
 ### Qué quedó fuera (futuro)
 - Uso de una **stablecoin** (USDC/DAI) en lugar de ETH para evitar volatilidad.
-- **Recuperación/rotación de guardianes** (social recovery) ante pérdida de claves.
 - **Reglas de liberación más finas** (montos parciales, límites por período).
 - **Rampas a moneda fiat** y **soporte multi-red**.
-- **App móvil** y **notificaciones** a los guardianes cuando se abre un reclamo.
+- **App móvil** y **notificaciones push** a los guardianes cuando se abre un reclamo.
+- **Indexador (The Graph)** para búsquedas eficientes a gran escala.
 
-Estas funcionalidades están detalladas como roadmap; el MVP prioriza demostrar el
-flujo central de custodia y liberación por consenso.
+Estas funcionalidades están detalladas como roadmap; el MVP ya cubre el flujo central
+de custodia y liberación por consenso, más recuperación social y multi-familia.
 
 ---
 
@@ -336,12 +342,22 @@ un "hace falta que la familia se ponga de acuerdo".
   actualiza antes. Aplicamos **checks-effects-interactions** (marcar `Liberado`
   antes de transferir) y un candado anti-reentrancy como defensa extra. Una
   aproximación ingenua (transferir y después actualizar) habría sido vulnerable.
+  **Evidencia:** escribimos un contrato atacante (`AtacanteReentrancy`) que intenta
+  reentrar al recibir los fondos; el test de Hardhat demuestra que **no logra drenar
+  ETH de más** y el reclamo no se libera dos veces.
 - **Por qué no basta una app/base de datos común:** una app tradicional con su
   base de datos **tiene un administrador** que, en última instancia, **controla los
   fondos** y puede modificar registros. Eso reintroduce exactamente el problema que
   queremos evitar: un **custodio único**. La blockchain es necesaria porque permite
   que **ningún custodio único** controle el dinero y que las reglas se cumplan de
   forma **verificable e inmutable** por todos.
+- **"¿No debería haber una base de datos para uso masivo?"** No: **la blockchain ES
+  la base de datos** (compartida, replicada e inviolable). El uso masivo se resuelve
+  sin una DB central con: (a) un **contrato Factory** (`FamilyVaultFactory`) que crea
+  una bóveda independiente por familia —ya implementado—; (b) un **indexador** como
+  *The Graph* para lecturas veloces (caché de solo lectura, no controla fondos); y
+  (c) los **proveedores RPC** para escalar la carga de lectura. Los datos *no críticos*
+  (nombres, notificaciones) pueden ir off-chain como comodidad, nunca como autoridad.
 
 ### Propuestas descartadas (resumen)
 - Verificación automática de la emergencia (oráculo técnico): inviable/costosa →
