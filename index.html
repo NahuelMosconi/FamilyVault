@@ -3,122 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bóveda Familiar — Fondo de Emergencia en Blockchain</title>
+  <title>FamilyVault — Bóveda Familiar de Emergencia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- ───────────── Encabezado ───────────── -->
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">🛡️</span>
-      <div>
-        <h1>Bóveda Familiar</h1>
-        <p class="subtitulo">Fondo de emergencia custodiado por la familia, en blockchain</p>
-      </div>
-    </div>
-    <div class="wallet-box">
-      <span id="red-badge" class="badge badge-gris" title="Red conectada">Sin conectar</span>
-      <span id="cuenta" class="cuenta" hidden></span>
-      <button id="btn-conectar" class="btn btn-primario">Conectar wallet</button>
-    </div>
-  </header>
+  <div class="app-shell">
 
-  <!-- ───────────── Banner de avisos (red equivocada, errores) ───────────── -->
-  <div id="aviso" class="aviso" hidden></div>
-
-  <main class="contenedor">
-
-    <!-- ───────────── Panel del fondo ───────────── -->
-    <section class="card">
-      <h2>📊 Estado del fondo</h2>
-      <div class="grid-info">
-        <div class="info-item">
-          <span class="info-label">Balance custodiado</span>
-          <span id="balance" class="info-valor destacado">— ETH</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Umbral de aprobación</span>
-          <span id="umbral" class="info-valor">— de —</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Administrador</span>
-          <span id="admin" class="info-valor mono">—</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">¿A dónde van los fondos?</span>
-          <span class="info-valor" style="font-size:.9rem">A quien crea el reclamo (el solicitante)</span>
+    <!-- ───────────── Sidebar ───────────── -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">🛡️</div>
+        <div class="brand-text">
+          <strong>FamilyVault</strong>
+          <span>Bóveda familiar</span>
         </div>
       </div>
-      <div class="guardianes-box">
-        <span class="info-label">Guardianes (integrantes de la familia)</span>
-        <ul id="lista-guardianes" class="lista-guardianes"><li class="vacio">Conectá tu wallet para ver el fondo.</li></ul>
-      </div>
-    </section>
 
-    <div class="dos-columnas">
-      <!-- ───────────── Depositar ───────────── -->
-      <section class="card">
-        <h2>💰 Depositar al fondo</h2>
-        <p class="ayuda">Cualquiera puede sumar ETH de prueba al fondo familiar.</p>
-        <div class="form-row">
-          <input id="input-deposito" type="number" min="0" step="0.001" placeholder="0.01" />
-          <span class="sufijo">ETH</span>
-        </div>
-        <button id="btn-depositar" class="btn btn-primario" disabled>Depositar</button>
-      </section>
+      <nav class="nav">
+        <a href="#resumen" class="nav-item active"><span class="nav-ico">📊</span> Resumen</a>
+        <a href="#acciones" class="nav-item"><span class="nav-ico">⚡</span> Acciones</a>
+        <a href="#reclamos" class="nav-item"><span class="nav-ico">📋</span> Reclamos</a>
+        <a href="#historial" class="nav-item"><span class="nav-ico">🧾</span> Historial</a>
+      </nav>
 
-      <!-- ───────────── Reportar emergencia ───────────── -->
-      <section class="card">
-        <h2>🚨 Reportar emergencia</h2>
-        <p class="ayuda">Solo un guardián puede abrir un reclamo de liberación.</p>
-        <label class="campo">
-          <span>Descripción del evento</span>
-          <textarea id="input-descripcion" rows="2" placeholder="Ej: Accidente de tránsito, gastos médicos urgentes"></textarea>
-        </label>
-        <label class="campo">
-          <span>Monto a liberar</span>
-          <div class="form-row">
-            <input id="input-monto-reclamo" type="number" min="0" step="0.001" placeholder="0.01" />
-            <span class="sufijo">ETH</span>
+      <div class="sidebar-foot">
+        <div class="net-card">
+          <span class="net-dot"></span>
+          <div>
+            <strong>Red Sepolia</strong>
+            <span>Testnet de Ethereum</span>
           </div>
-        </label>
-        <label class="campo">
-          <span>Evidencia (opcional) — se calcula su hash localmente</span>
-          <textarea id="input-evidencia" rows="2" placeholder="Pegá un texto, link o detalle. Se hashea con keccak256."></textarea>
-          <small id="hash-preview" class="mono hash-preview"></small>
-        </label>
-        <button id="btn-crear-reclamo" class="btn btn-alerta" disabled>Crear reclamo</button>
-      </section>
+        </div>
+        <p class="muted-xs">Fondo multifirma · M de N · sin custodio único</p>
+      </div>
+    </aside>
+
+    <!-- ───────────── Main ───────────── -->
+    <div class="main">
+
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1>Panel de la bóveda</h1>
+          <p>Fondo de emergencia custodiado por la familia, liberado por consenso.</p>
+        </div>
+        <div class="wallet">
+          <span id="red-badge" class="badge badge-gris" title="Red conectada">Sin conectar</span>
+          <span id="cuenta" class="cuenta" hidden></span>
+          <button id="btn-conectar" class="btn btn-primary">Conectar wallet</button>
+        </div>
+      </header>
+
+      <div id="aviso" class="aviso" hidden></div>
+
+      <main class="content">
+
+        <!-- ───────── Métricas ───────── -->
+        <section id="resumen" class="stats-grid">
+          <div class="stat stat-hero">
+            <span class="stat-label">Balance custodiado</span>
+            <span id="balance" class="stat-hero-value">— ETH</span>
+            <span class="stat-hero-sub">Disponible en el fondo de emergencia</span>
+          </div>
+          <div class="stat">
+            <div class="stat-ico">✅</div>
+            <span class="stat-label">Umbral de aprobación</span>
+            <span id="umbral" class="stat-value">— de —</span>
+            <span class="stat-sub">firmas para liberar fondos</span>
+          </div>
+          <div class="stat">
+            <div class="stat-ico">👥</div>
+            <span class="stat-label">Guardianes</span>
+            <span id="stat-guardianes" class="stat-value">—</span>
+            <span class="stat-sub">integrantes de la familia</span>
+          </div>
+          <div class="stat">
+            <div class="stat-ico">🔑</div>
+            <span class="stat-label">Tu acceso</span>
+            <span id="mi-rol" class="pill pill-muted">Sin conectar</span>
+            <span class="stat-sub">rol de la wallet conectada</span>
+          </div>
+        </section>
+
+        <!-- ───────── Guardianes ───────── -->
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>Guardianes</h2>
+              <p class="card-sub">Quienes pueden crear y aprobar reclamos de liberación.</p>
+            </div>
+            <span class="meta-admin">Admin: <span id="admin" class="mono">—</span></span>
+          </div>
+          <ul id="lista-guardianes" class="guardianes">
+            <li class="vacio">Conectá tu wallet para ver el fondo.</li>
+          </ul>
+          <p class="nota">📤 Los fondos liberados se envían a quien crea el reclamo (el solicitante).</p>
+        </section>
+
+        <!-- ───────── Acciones ───────── -->
+        <section id="acciones" class="cols-2">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>💰 Depositar</h2>
+                <p class="card-sub">Cualquiera puede sumar fondos a la bóveda.</p>
+              </div>
+            </div>
+            <label class="field">
+              <span>Monto</span>
+              <div class="input-group">
+                <input id="input-deposito" type="number" min="0" step="0.001" placeholder="0.01" />
+                <span class="input-suffix">ETH</span>
+              </div>
+            </label>
+            <button id="btn-depositar" class="btn btn-primary btn-block" disabled>Depositar al fondo</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>🚨 Reportar emergencia</h2>
+                <p class="card-sub">Solo un guardián puede abrir un reclamo.</p>
+              </div>
+            </div>
+            <label class="field">
+              <span>Descripción del evento</span>
+              <textarea id="input-descripcion" rows="2" placeholder="Ej: Accidente de tránsito, gastos médicos urgentes"></textarea>
+            </label>
+            <label class="field">
+              <span>Monto a liberar</span>
+              <div class="input-group">
+                <input id="input-monto-reclamo" type="number" min="0" step="0.001" placeholder="0.01" />
+                <span class="input-suffix">ETH</span>
+              </div>
+            </label>
+            <label class="field">
+              <span>Evidencia (opcional) — se calcula su hash localmente</span>
+              <textarea id="input-evidencia" rows="2" placeholder="Pegá un texto, link o detalle. Se hashea con keccak256."></textarea>
+              <small id="hash-preview" class="mono hash-preview"></small>
+            </label>
+            <button id="btn-crear-reclamo" class="btn btn-danger btn-block" disabled>Crear reclamo</button>
+          </div>
+        </section>
+
+        <!-- ───────── Reclamos ───────── -->
+        <section id="reclamos" class="card">
+          <div class="card-head">
+            <div>
+              <h2>📋 Reclamos de liberación</h2>
+              <p class="card-sub">Cada reclamo recorre: Abierto → Pendiente → Aprobado → Liberado.</p>
+            </div>
+            <button id="btn-refrescar" class="btn btn-ghost" disabled>↻ Refrescar</button>
+          </div>
+          <div id="lista-reclamos" class="reclamos">
+            <p class="vacio">Conectá tu wallet para ver los reclamos.</p>
+          </div>
+        </section>
+
+        <!-- ───────── Historial ───────── -->
+        <section id="historial" class="card">
+          <div class="card-head">
+            <div>
+              <h2>🧾 Historial de actividad</h2>
+              <p class="card-sub">Depósitos y reclamos registrados en la blockchain. No se pierde al recargar.</p>
+            </div>
+          </div>
+          <ul id="log-eventos" class="historial">
+            <li class="vacio">Conectá tu wallet para ver el historial.</li>
+          </ul>
+        </section>
+
+      </main>
+
+      <footer class="footer">
+        <span>FamilyVault — Hackathon Teoría de la Computación II</span>
+        <span>dApp educativa sobre Sepolia · liberación por consenso multifirma</span>
+      </footer>
     </div>
+  </div>
 
-    <!-- ───────────── Lista de reclamos ───────────── -->
-    <section class="card">
-      <div class="card-head">
-        <h2>📋 Reclamos de liberación</h2>
-        <button id="btn-refrescar" class="btn btn-secundario" disabled>↻ Refrescar</button>
-      </div>
-      <div id="lista-reclamos" class="lista-reclamos">
-        <p class="vacio">Conectá tu wallet para ver los reclamos.</p>
-      </div>
-    </section>
-
-    <!-- ───────────── Historial de actividad (eventos) ───────────── -->
-    <section class="card">
-      <h2>🧾 Historial de actividad (registrado en la blockchain)</h2>
-      <p class="ayuda">Depósitos (quién y cuánto) y reclamos (cuándo, motivo, monto, a quién se liberó). Se lee de la cadena, así que no se pierde al recargar.</p>
-      <ul id="log-eventos" class="log-eventos">
-        <li class="vacio">Conectá tu wallet para ver el historial.</li>
-      </ul>
-    </section>
-
-  </main>
-
-  <footer class="footer">
-    <p>FamilyVault — Hackathon Teoría de la Computación II · dApp educativa sobre Sepolia testnet.</p>
-    <p>El fondo se libera por consenso multifirma (M de N). Ninguna persona sola puede tocar los fondos.</p>
-  </footer>
-
-  <!-- Overlay de carga mientras se mina una transacción -->
+  <!-- Overlay de carga -->
   <div id="overlay" class="overlay" hidden>
     <div class="overlay-card">
       <div class="spinner"></div>
@@ -126,7 +192,6 @@
     </div>
   </div>
 
-  <!-- ethers.js v6 desde CDN (UMD: expone el global `ethers`) -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
