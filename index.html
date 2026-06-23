@@ -114,6 +114,23 @@
           </div>
         </section>
 
+        <!-- ───────── Meta del fondo ───────── -->
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2>🎯 Meta del fondo</h2>
+              <p class="card-sub">Objetivo de ahorro que se propuso la familia.</p>
+            </div>
+            <div id="meta-control" class="meta-control" hidden>
+              <input id="input-meta" type="number" min="0" step="0.001" placeholder="Ej: 1.0" />
+              <span class="input-suffix">ETH</span>
+              <button id="btn-meta" class="btn btn-ghost">Fijar meta</button>
+            </div>
+          </div>
+          <div class="meta-bar"><div id="meta-fill" class="meta-fill" style="width:0%"></div></div>
+          <p id="meta-texto" class="meta-texto muted">Sin meta fijada.</p>
+        </section>
+
         <!-- ───────── Guardianes ───────── -->
         <section class="card">
           <div class="card-head">
@@ -192,6 +209,44 @@
           </div>
           <div id="lista-reclamos" class="reclamos">
             <p class="vacio">Conectá tu wallet para ver los reclamos.</p>
+          </div>
+        </section>
+
+        <!-- ───────── Aportes + Recuperación ───────── -->
+        <section class="cols-2">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>💞 Aportes por integrante</h2>
+                <p class="card-sub">Cuánto depositó cada uno al fondo (histórico).</p>
+              </div>
+            </div>
+            <ul id="lista-aportes" class="aportes">
+              <li class="vacio">Conectá tu wallet para ver los aportes.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2>🔁 Recuperación de guardianes</h2>
+                <p class="card-sub">Reemplazá por consenso a un guardián (ej. perdió su clave).</p>
+              </div>
+            </div>
+            <div id="rotacion-form" class="rotacion-form" hidden>
+              <label class="field">
+                <span>Reemplazar a</span>
+                <select id="rot-viejo"></select>
+              </label>
+              <label class="field">
+                <span>Por la dirección</span>
+                <input id="rot-nuevo" placeholder="0x..." />
+              </label>
+              <button id="btn-proponer-rotacion" class="btn btn-primary btn-block">Proponer rotación</button>
+            </div>
+            <ul id="lista-rotaciones" class="rotaciones">
+              <li class="vacio">Sin propuestas de rotación.</li>
+            </ul>
           </div>
         </section>
 

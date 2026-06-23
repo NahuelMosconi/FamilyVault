@@ -24,6 +24,14 @@ let adminAddr = null;      // dirección del admin (minúsculas, para permisos d
 // Nombres legibles de los estados (índice = enum del contrato)
 const NOMBRE_ESTADO = ["Abierto", "Pendiente", "Aprobado", "Liberado", "Cancelado"];
 const CLASE_ESTADO = ["estado-abierto", "estado-pendiente", "estado-aprobado", "estado-liberado", "estado-cancelado"];
+// Explicación de cada estado (tooltip al pasar el mouse).
+const TOOLTIP_ESTADO = [
+  "Abierto: reclamo recién creado, sin aprobaciones todavía.",
+  "Pendiente: tiene aprobaciones pero aún no llega al umbral.",
+  "Aprobado: alcanzó el umbral (estado transitorio antes de transferir).",
+  "Liberado: se alcanzó el umbral y los fondos se enviaron al solicitante.",
+  "Cancelado: anulado por el solicitante o el admin antes de liberarse.",
+];
 
 // Filtro activo de la lista de reclamos ("activos" | "liberados" | "cancelados" | "todos")
 let filtroReclamos = "activos";
@@ -157,6 +165,14 @@ function textoDeEvento(nombre, a) {
       return `✅ Reclamo #${a.idReclamo} LIBERADO: ${ethers.formatEther(a.monto)} ETH → ${nombreDe(a.destino)}`;
     case "ReclamoCancelado":
       return `🚫 Reclamo #${a.idReclamo} cancelado por ${nombreDe(a.porQuien)}`;
+    case "MetaFijada":
+      return `🎯 Meta del fondo fijada en ${ethers.formatEther(a.meta)} ETH`;
+    case "RotacionPropuesta":
+      return `🔁 Rotación #${a.idRotacion} propuesta por ${nombreDe(a.proponente)}: ${nombreDe(a.viejo)} → ${nombreDe(a.nuevo)}`;
+    case "RotacionAprobada":
+      return `✍️ Rotación #${a.idRotacion} aprobada por ${nombreDe(a.guardian)} (${a.aprobaciones}/${a.umbral})`;
+    case "GuardianRotado":
+      return `♻️ Guardián reemplazado: ${nombreDe(a.viejo)} → ${nombreDe(a.nuevo)}`;
     default:
       return "Evento";
   }
@@ -171,23 +187,30 @@ async function cargarHistorial() {
   if (!contratoLectura) return;
   const ul = $("log-eventos");
   try {
-    const nombres = ["Deposito", "ReclamoCreado", "Aprobacion", "FondosLiberados", "ReclamoCancelado"];
+    const nombres = ["Deposito", "ReclamoCreado", "Aprobacion", "FondosLiberados",
+      "ReclamoCancelado", "MetaFijada", "RotacionPropuesta", "RotacionAprobada", "GuardianRotado"];
     const listas = await Promise.all(nombres.map((n) => contratoLectura.queryFilter(n)));
     // Aplanamos guardando el nombre del evento junto a cada log.
     const eventos = [];
     listas.forEach((lista, i) => lista.forEach((ev) => eventos.push({ ev, nombre: nombres[i] })));
 
-    // Estadísticas: total depositado e histórico liberado (sumando los eventos).
+    // Estadísticas: total depositado, histórico liberado y aportes por integrante.
     totalDepositado = 0n;
     totalLiberado = 0n;
+    const aportes = {}; // dirección (minúsculas) => total aportado (bigint)
     for (const { ev, nombre } of eventos) {
-      if (nombre === "Deposito") totalDepositado += ev.args.monto;
+      if (nombre === "Deposito") {
+        totalDepositado += ev.args.monto;
+        const k = ev.args.origen.toLowerCase();
+        aportes[k] = (aportes[k] || 0n) + ev.args.monto;
+      }
       if (nombre === "FondosLiberados") totalLiberado += ev.args.monto;
     }
     const elDep = $("stat-depositado");
     if (elDep) elDep.textContent = `${ethers.formatEther(totalDepositado)} ETH`;
     const elLib = $("stat-liberado");
     if (elLib) elLib.textContent = `${ethers.formatEther(totalLiberado)} ETH`;
+    renderAportes(aportes);
 
     if (eventos.length === 0) {
       ul.innerHTML = `<li class="vacio">Todavía no hay actividad. Hacé un depósito para empezar.</li>`;
@@ -387,6 +410,10 @@ function suscribirEventos() {
   contratoLectura.on("ReclamoCreado", alCambiar);
   contratoLectura.on("Aprobacion", alCambiar);
   contratoLectura.on("ReclamoCancelado", alCambiar);
+  contratoLectura.on("MetaFijada", alCambiar);
+  contratoLectura.on("RotacionPropuesta", alCambiar);
+  contratoLectura.on("RotacionAprobada", alCambiar);
+  contratoLectura.on("GuardianRotado", alCambiar);
   // Liberación: además de refrescar, celebramos (confeti + toast) para todos
   // los que tengan la app abierta. Solo dispara en eventos nuevos, no históricos.
   contratoLectura.on("FondosLiberados", (id, destino, monto) => {
@@ -402,17 +429,19 @@ function suscribirEventos() {
 async function refrescarTodo() {
   await refrescarFondo();
   await refrescarReclamos();
+  await refrescarRotaciones();
   await cargarHistorial();
 }
 
 async function refrescarFondo() {
   if (!contratoLectura) return;
   try {
-    const [bal, umbral, admin, guardianes] = await Promise.all([
+    const [bal, umbral, admin, guardianes, meta] = await Promise.all([
       contratoLectura.balance(),
       contratoLectura.umbral(),
       contratoLectura.admin(),
       contratoLectura.obtenerGuardianes(),
+      contratoLectura.meta(),
     ]);
 
     $("balance").textContent = `${ethers.formatEther(bal)} ETH`;
@@ -424,6 +453,26 @@ async function refrescarFondo() {
     // ¿La cuenta conectada es guardián?
     soyGuardian = guardianes.some((g) => g.toLowerCase() === cuentaActual);
     $("btn-crear-reclamo").disabled = !redOk || !soyGuardian;
+
+    // Meta del fondo: barra de progreso + control para el admin.
+    actualizarMeta(bal, meta);
+    const esAdmin = cuentaActual === adminAddr;
+    const mc = $("meta-control");
+    if (mc) mc.hidden = !esAdmin;
+
+    // Recuperación de guardianes: mostramos el form a los guardianes y llenamos el select.
+    const rf = $("rotacion-form");
+    if (rf) rf.hidden = !soyGuardian || !redOk;
+    const sel = $("rot-viejo");
+    if (sel) {
+      sel.innerHTML = "";
+      guardianes.forEach((g) => {
+        const opt = document.createElement("option");
+        opt.value = g;
+        opt.textContent = `${nombreDe(g)} (${acortar(g)})`;
+        sel.appendChild(opt);
+      });
+    }
 
     // Métricas del dashboard (cantidad de guardianes + rol de la wallet).
     const elCant = $("stat-guardianes");
@@ -462,6 +511,91 @@ async function refrescarFondo() {
     }
   } catch (err) {
     mostrarAviso("No se pudo leer el fondo: " + mensajeDeError(err), true);
+  }
+}
+
+/** Actualiza la barra y el texto de la meta del fondo. */
+function actualizarMeta(balance, meta) {
+  const fill = $("meta-fill");
+  const texto = $("meta-texto");
+  if (!fill || !texto) return;
+  if (meta && meta > 0n) {
+    const pct = Math.min(100, Number((balance * 10000n) / meta) / 100);
+    fill.style.width = pct + "%";
+    texto.textContent =
+      `${ethers.formatEther(balance)} / ${ethers.formatEther(meta)} ETH (${pct.toFixed(1)}%)` +
+      (balance >= meta ? " — ¡Meta alcanzada! 🎉" : "");
+  } else {
+    fill.style.width = "0%";
+    texto.textContent = "Sin meta fijada.";
+  }
+}
+
+/** Renderiza el ranking de aportes por integrante (desde los eventos Deposito). */
+function renderAportes(aportes) {
+  const ul = $("lista-aportes");
+  if (!ul) return;
+  const entradas = Object.entries(aportes).sort((a, b) => (b[1] > a[1] ? 1 : -1));
+  if (entradas.length === 0) {
+    ul.innerHTML = `<li class="vacio">Todavía no hay depósitos.</li>`;
+    return;
+  }
+  const max = entradas[0][1];
+  ul.innerHTML = "";
+  const medallas = ["🥇", "🥈", "🥉"];
+  entradas.forEach(([dir, monto], i) => {
+    const pct = max > 0n ? Number((monto * 10000n) / max) / 100 : 0;
+    const li = document.createElement("li");
+    li.innerHTML =
+      `<div class="aporte-top"><span>${medallas[i] || "•"} <strong>${escaparHtml(nombreDe(dir))}</strong></span>` +
+      `<span class="mono">${ethers.formatEther(monto)} ETH</span></div>` +
+      `<div class="barra"><div class="barra-fill" style="width:${pct}%"></div></div>`;
+    ul.appendChild(li);
+  });
+}
+
+/** Lee y renderiza las propuestas de rotación de guardianes (recuperación social). */
+async function refrescarRotaciones() {
+  if (!contratoLectura) return;
+  const cont = $("lista-rotaciones");
+  if (!cont) return;
+  try {
+    const total = Number(await contratoLectura.cantidadRotaciones());
+    if (total === 0) {
+      cont.innerHTML = `<li class="vacio">Sin propuestas de rotación.</li>`;
+      return;
+    }
+    const ids = Array.from({ length: total }, (_, i) => i);
+    const datos = await Promise.all(ids.map((i) => contratoLectura.obtenerRotacion(i)));
+    const umbral = Number(await contratoLectura.umbral());
+
+    cont.innerHTML = "";
+    for (let i = total - 1; i >= 0; i--) {
+      const [viejo, nuevo, aprob, ejecutada] = datos[i];
+      const li = document.createElement("li");
+      li.className = "rotacion-item";
+      const estadoTxt = ejecutada
+        ? `<span class="estado estado-aprobado">Aplicada ✓</span>`
+        : `<span class="estado estado-pendiente">${Number(aprob)}/${umbral}</span>`;
+      li.innerHTML =
+        `<div><strong>${escaparHtml(nombreDe(viejo))}</strong> → <strong>${escaparHtml(nombreDe(nuevo))}</strong>` +
+        `<div class="mono" style="opacity:.6;font-size:11px">${acortar(viejo)} → ${acortar(nuevo)}</div></div>` +
+        `<div class="rot-foot">${estadoTxt}</div>`;
+      // Botón aprobar si soy guardián, no ejecutada y no aprobé.
+      if (soyGuardian && !ejecutada) {
+        let yaAprobe = false;
+        try { yaAprobe = await contratoLectura.yaAproboRotacion(i, cuentaActual); } catch (_) {}
+        const btn = document.createElement("button");
+        btn.className = "btn btn-aprobar";
+        btn.textContent = yaAprobe ? "Ya aprobaste" : "Aprobar";
+        btn.disabled = yaAprobe || !redOk;
+        btn.onclick = () => aprobarRotacionUI(i);
+        li.querySelector(".rot-foot").appendChild(btn);
+      }
+      cont.appendChild(li);
+    }
+  } catch (err) {
+    cont.innerHTML = `<li class="vacio">No se pudieron leer las rotaciones.</li>`;
   }
 }
 
@@ -548,7 +682,7 @@ async function renderReclamo(id, datos, umbral) {
         <div class="reclamo-id">Reclamo #${id} · abierto por ${escaparHtml(nombreDe(solicitante))}</div>
         <p class="reclamo-desc">${escaparHtml(descripcion)}</p>
       </div>
-      <span class="estado ${CLASE_ESTADO[estado]}">${NOMBRE_ESTADO[estado]}</span>
+      <span class="estado ${CLASE_ESTADO[estado]}" title="${TOOLTIP_ESTADO[estado]}">${NOMBRE_ESTADO[estado]}</span>
     </div>
     <div class="reclamo-meta">
       <span>💵 Monto a liberar: <strong>${ethers.formatEther(monto)} ETH</strong></span>
@@ -696,6 +830,60 @@ async function cancelarReclamo(id) {
   }
 }
 
+async function fijarMeta() {
+  ocultarAviso();
+  const valor = $("input-meta").value.trim();
+  if (valor === "" || Number(valor) < 0) { mostrarAviso("Ingresá un monto válido para la meta.", true); return; }
+  try {
+    mostrarOverlay("Fijando meta… confirmá en MetaMask.");
+    const tx = await contrato.fijarMeta(ethers.parseEther(valor));
+    mostrarOverlay("Registrando la meta en Sepolia…");
+    await tx.wait();
+    toast(`Meta fijada en ${valor} ETH`, "ok");
+    $("input-meta").value = "";
+    await refrescarFondo();
+  } catch (err) {
+    mostrarAviso(mensajeDeError(err), true);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+async function proponerRotacion() {
+  ocultarAviso();
+  const viejo = $("rot-viejo").value;
+  const nuevo = $("rot-nuevo").value.trim();
+  if (!ethers.isAddress(nuevo)) { mostrarAviso("La dirección nueva no es válida.", true); return; }
+  try {
+    mostrarOverlay("Proponiendo rotación… confirmá en MetaMask.");
+    const tx = await contrato.proponerRotacion(viejo, nuevo);
+    mostrarOverlay("Registrando la propuesta en Sepolia…");
+    await tx.wait();
+    toast("Rotación propuesta. Ahora debe aprobarse por consenso.", "ok");
+    $("rot-nuevo").value = "";
+    await refrescarTodo();
+  } catch (err) {
+    mostrarAviso(mensajeDeError(err), true);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+async function aprobarRotacionUI(id) {
+  ocultarAviso();
+  try {
+    mostrarOverlay(`Aprobando rotación #${id}… confirmá en MetaMask.`);
+    const tx = await contrato.aprobarRotacion(id);
+    mostrarOverlay("Registrando la aprobación en Sepolia…");
+    await tx.wait();
+    await refrescarTodo();
+  } catch (err) {
+    mostrarAviso(mensajeDeError(err), true);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 //  ENGANCHE DE EVENTOS DEL DOM
 // ───────────────────────────────────────────────────────────────────────────
@@ -705,6 +893,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-depositar").addEventListener("click", depositar);
   $("btn-crear-reclamo").addEventListener("click", crearReclamo);
   $("btn-refrescar").addEventListener("click", refrescarTodo);
+  $("btn-meta").addEventListener("click", fijarMeta);
+  $("btn-proponer-rotacion").addEventListener("click", proponerRotacion);
 
   // Tema claro/oscuro. El tema ya se aplicó en <head> (anti-parpadeo);
   // acá sincronizamos el ícono del botón y manejamos el toggle.

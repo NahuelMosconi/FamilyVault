@@ -140,6 +140,44 @@ const CONTRACT_ABI = [
       {
         "indexed": true,
         "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "viejo",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nuevo",
+        "type": "address"
+      }
+    ],
+    "name": "GuardianRotado",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "meta",
+        "type": "uint256"
+      }
+    ],
+    "name": "MetaFijada",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
         "name": "idReclamo",
         "type": "uint256"
       },
@@ -191,6 +229,68 @@ const CONTRACT_ABI = [
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "aprobaciones",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "umbral",
+        "type": "uint256"
+      }
+    ],
+    "name": "RotacionAprobada",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "viejo",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nuevo",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "proponente",
+        "type": "address"
+      }
+    ],
+    "name": "RotacionPropuesta",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "admin",
     "outputs": [
@@ -231,11 +331,48 @@ const CONTRACT_ABI = [
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "aprobadoRotacion",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "idReclamo",
         "type": "uint256"
       }
     ],
     "name": "aprobar",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      }
+    ],
+    "name": "aprobarRotacion",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -282,6 +419,19 @@ const CONTRACT_ABI = [
   {
     "inputs": [],
     "name": "cantidadReclamos",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "cantidadRotaciones",
     "outputs": [
       {
         "internalType": "uint256",
@@ -351,6 +501,19 @@ const CONTRACT_ABI = [
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "_meta",
+        "type": "uint256"
+      }
+    ],
+    "name": "fijarMeta",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
@@ -361,6 +524,19 @@ const CONTRACT_ABI = [
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "meta",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -432,6 +608,64 @@ const CONTRACT_ABI = [
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      }
+    ],
+    "name": "obtenerRotacion",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "viejo",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "nuevo",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "aprobaciones",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "ejecutada",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "viejo",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "nuevo",
+        "type": "address"
+      }
+    ],
+    "name": "proponerRotacion",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
@@ -478,6 +712,40 @@ const CONTRACT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "rotaciones",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "viejo",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "nuevo",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "aprobaciones",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "ejecutada",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "umbral",
     "outputs": [
@@ -504,6 +772,30 @@ const CONTRACT_ABI = [
       }
     ],
     "name": "yaAprobo",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "idRotacion",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "guardian",
+        "type": "address"
+      }
+    ],
+    "name": "yaAproboRotacion",
     "outputs": [
       {
         "internalType": "bool",
