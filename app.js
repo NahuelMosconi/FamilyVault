@@ -19,10 +19,18 @@ let contratoLectura = null;// instancia con provider (para leer)
 let cuentaActual = null;   // dirección conectada (minúsculas para comparar)
 let soyGuardian = false;   // ¿la cuenta conectada es guardián?
 let redOk = false;         // ¿estamos en Sepolia?
+let adminAddr = null;      // dirección del admin (minúsculas, para permisos de cancelar)
 
 // Nombres legibles de los estados (índice = enum del contrato)
-const NOMBRE_ESTADO = ["Abierto", "Pendiente", "Aprobado", "Liberado"];
-const CLASE_ESTADO = ["estado-abierto", "estado-pendiente", "estado-aprobado", "estado-liberado"];
+const NOMBRE_ESTADO = ["Abierto", "Pendiente", "Aprobado", "Liberado", "Cancelado"];
+const CLASE_ESTADO = ["estado-abierto", "estado-pendiente", "estado-aprobado", "estado-liberado", "estado-cancelado"];
+
+// Filtro activo de la lista de reclamos ("activos" | "liberados" | "cancelados" | "todos")
+let filtroReclamos = "activos";
+
+// Acumuladores de estadísticas (se completan al cargar el historial)
+let totalDepositado = 0n;
+let totalLiberado = 0n;
 
 // ── Atajos al DOM ──────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
@@ -44,6 +52,62 @@ function mostrarOverlay(texto) {
   $("overlay").hidden = false;
 }
 function ocultarOverlay() { $("overlay").hidden = true; }
+
+/**
+ * Muestra una notificación tipo "toast" arriba a la derecha.
+ * @param {string} mensaje  Texto a mostrar.
+ * @param {"info"|"ok"|"error"} tipo  Estilo de la notificación.
+ * @param {number} duracion  Milisegundos hasta que se va sola.
+ */
+function toast(mensaje, tipo = "info", duracion = 4500) {
+  const cont = $("toasts");
+  if (!cont) return;
+  const t = document.createElement("div");
+  t.className = `toast toast-${tipo}`;
+  const ico = tipo === "ok" ? "✅" : tipo === "error" ? "⚠️" : "ℹ️";
+  t.innerHTML = `<span class="toast-ico">${ico}</span><span>${mensaje}</span>`;
+  cont.appendChild(t);
+  // Forzamos reflow para animar la entrada.
+  requestAnimationFrame(() => t.classList.add("show"));
+  setTimeout(() => {
+    t.classList.remove("show");
+    setTimeout(() => t.remove(), 300);
+  }, duracion);
+}
+
+/** Lanza una lluvia de confeti (celebración al liberar fondos). */
+function confetti() {
+  const cont = $("confetti");
+  if (!cont) return;
+  const colores = ["#6366f1", "#8b5cf6", "#a855f7", "#34d399", "#fbbf24", "#f87171"];
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement("i");
+    p.className = "confeti";
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.background = colores[i % colores.length];
+    p.style.animationDelay = Math.random() * 0.5 + "s";
+    p.style.animationDuration = 2.2 + Math.random() * 1.4 + "s";
+    p.style.transform = `rotate(${Math.random() * 360}deg)`;
+    cont.appendChild(p);
+    setTimeout(() => p.remove(), 4200);
+  }
+}
+
+/** Celebración cuando se liberan fondos: confeti + toast. */
+function celebrarLiberacion(montoStr, nombre) {
+  confetti();
+  toast(`💸 ¡Fondos liberados! ${montoStr} ETH para ${nombre}`, "ok", 6000);
+}
+
+/** Copia un texto al portapapeles y avisa. */
+async function copiar(texto, etiqueta = "Dirección") {
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast(`${etiqueta} copiada al portapapeles`, "info", 2500);
+  } catch (_) {
+    toast("No se pudo copiar", "error", 2500);
+  }
+}
 
 function acortar(dir) {
   if (!dir) return "—";
@@ -91,6 +155,8 @@ function textoDeEvento(nombre, a) {
       return `✍️ Aprobación de ${nombreDe(a.guardian)} en reclamo #${a.idReclamo} (${a.aprobaciones}/${a.umbral})`;
     case "FondosLiberados":
       return `✅ Reclamo #${a.idReclamo} LIBERADO: ${ethers.formatEther(a.monto)} ETH → ${nombreDe(a.destino)}`;
+    case "ReclamoCancelado":
+      return `🚫 Reclamo #${a.idReclamo} cancelado por ${nombreDe(a.porQuien)}`;
     default:
       return "Evento";
   }
@@ -105,11 +171,23 @@ async function cargarHistorial() {
   if (!contratoLectura) return;
   const ul = $("log-eventos");
   try {
-    const nombres = ["Deposito", "ReclamoCreado", "Aprobacion", "FondosLiberados"];
+    const nombres = ["Deposito", "ReclamoCreado", "Aprobacion", "FondosLiberados", "ReclamoCancelado"];
     const listas = await Promise.all(nombres.map((n) => contratoLectura.queryFilter(n)));
     // Aplanamos guardando el nombre del evento junto a cada log.
     const eventos = [];
     listas.forEach((lista, i) => lista.forEach((ev) => eventos.push({ ev, nombre: nombres[i] })));
+
+    // Estadísticas: total depositado e histórico liberado (sumando los eventos).
+    totalDepositado = 0n;
+    totalLiberado = 0n;
+    for (const { ev, nombre } of eventos) {
+      if (nombre === "Deposito") totalDepositado += ev.args.monto;
+      if (nombre === "FondosLiberados") totalLiberado += ev.args.monto;
+    }
+    const elDep = $("stat-depositado");
+    if (elDep) elDep.textContent = `${ethers.formatEther(totalDepositado)} ETH`;
+    const elLib = $("stat-liberado");
+    if (elLib) elLib.textContent = `${ethers.formatEther(totalLiberado)} ETH`;
 
     if (eventos.length === 0) {
       ul.innerHTML = `<li class="vacio">Todavía no hay actividad. Hacé un depósito para empezar.</li>`;
@@ -308,7 +386,13 @@ function suscribirEventos() {
   contratoLectura.on("Deposito", alCambiar);
   contratoLectura.on("ReclamoCreado", alCambiar);
   contratoLectura.on("Aprobacion", alCambiar);
-  contratoLectura.on("FondosLiberados", alCambiar);
+  contratoLectura.on("ReclamoCancelado", alCambiar);
+  // Liberación: además de refrescar, celebramos (confeti + toast) para todos
+  // los que tengan la app abierta. Solo dispara en eventos nuevos, no históricos.
+  contratoLectura.on("FondosLiberados", (id, destino, monto) => {
+    celebrarLiberacion(ethers.formatEther(monto), nombreDe(destino));
+    refrescarTodo();
+  });
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -335,6 +419,7 @@ async function refrescarFondo() {
     $("umbral").textContent = `${Number(umbral)} de ${guardianes.length}`;
     $("admin").textContent = nombreDe(admin);
     $("admin").title = admin;
+    adminAddr = admin.toLowerCase();
 
     // ¿La cuenta conectada es guardián?
     soyGuardian = guardianes.some((g) => g.toLowerCase() === cuentaActual);
@@ -355,13 +440,21 @@ async function refrescarFondo() {
     guardianes.forEach((g) => {
       const li = document.createElement("li");
       const esYo = g.toLowerCase() === cuentaActual;
-      // Mostramos el nombre del integrante y, en chico, su dirección.
+      // Nombre + dirección + acciones (copiar / ver en Etherscan).
       li.innerHTML =
-        `<span><strong>${escaparHtml(nombreDe(g))}</strong> ` +
+        `<span class="g-info"><strong>${escaparHtml(nombreDe(g))}</strong> ` +
         `<span class="mono" style="opacity:.6">${acortar(g)}</span></span>` +
-        (esYo ? `<span class="etiqueta-yo">vos</span>` : "");
+        (esYo ? `<span class="etiqueta-yo">vos</span>` : "") +
+        `<span class="g-acciones">` +
+        `<button class="mini-btn" title="Copiar dirección" data-copiar="${g}">⧉</button>` +
+        `<a class="mini-btn" title="Ver en Etherscan" target="_blank" rel="noopener" href="${NETWORK.explorador}/address/${g}">↗</a>` +
+        `</span>`;
       ul.appendChild(li);
     });
+    // Enganchamos los botones de copiar (delegación simple).
+    ul.querySelectorAll("[data-copiar]").forEach((b) =>
+      b.addEventListener("click", () => copiar(b.getAttribute("data-copiar")))
+    );
 
     if (!soyGuardian) {
       // Aviso suave (no error) si no sos guardián.
@@ -372,11 +465,22 @@ async function refrescarFondo() {
   }
 }
 
+// ¿Pasa el reclamo el filtro activo? (según su estado)
+function pasaFiltro(estado) {
+  if (filtroReclamos === "todos") return true;
+  if (filtroReclamos === "liberados") return estado === 3;
+  if (filtroReclamos === "cancelados") return estado === 4;
+  return estado === 0 || estado === 1 || estado === 2; // "activos"
+}
+
 async function refrescarReclamos() {
   if (!contratoLectura) return;
   const cont = $("lista-reclamos");
   try {
     const total = Number(await contratoLectura.cantidadReclamos());
+    const elReclamos = $("stat-reclamos");
+    if (elReclamos) elReclamos.textContent = total;
+
     if (total === 0) {
       cont.innerHTML = `<p class="vacio">Todavía no hay reclamos. Si sos guardián, podés reportar una emergencia.</p>`;
       return;
@@ -388,9 +492,15 @@ async function refrescarReclamos() {
     const datos = await Promise.all(ids.map((i) => contratoLectura.obtenerReclamo(i)));
 
     cont.innerHTML = "";
-    // Mostramos del más nuevo al más viejo.
+    // Mostramos del más nuevo al más viejo, aplicando el filtro.
+    let mostrados = 0;
     for (let i = total - 1; i >= 0; i--) {
+      if (!pasaFiltro(Number(datos[i][5]))) continue;
       cont.appendChild(await renderReclamo(i, datos[i], umbral));
+      mostrados++;
+    }
+    if (mostrados === 0) {
+      cont.innerHTML = `<p class="vacio">No hay reclamos en esta vista. Probá con otro filtro.</p>`;
     }
   } catch (err) {
     mostrarAviso("No se pudieron leer los reclamos: " + mensajeDeError(err), true);
@@ -416,14 +526,21 @@ async function renderReclamo(id, datos, umbral) {
     ? `<span>🔐 Hash evidencia: <span class="mono">${acortar(hashEvidencia)}</span></span>`
     : "";
 
-  // ¿Puede esta wallet aprobar? Solo guardián, reclamo no liberado, y que no haya aprobado ya.
+  const esFinal = estado === 3 || estado === 4; // Liberado o Cancelado
+
+  // ¿Puede esta wallet aprobar? Solo guardián, reclamo no finalizado, y que no haya aprobado ya.
   let puedeAprobar = false;
-  if (soyGuardian && estado !== 3) {
+  if (soyGuardian && !esFinal) {
     try {
       const yaAprobo = await contratoLectura.yaAprobo(id, cuentaActual);
       puedeAprobar = !yaAprobo;
     } catch (_) { puedeAprobar = false; }
   }
+
+  // ¿Puede cancelar? El solicitante o el admin, si todavía no es final.
+  const puedeCancelar = !esFinal && (
+    cuentaActual === solicitante.toLowerCase() || cuentaActual === adminAddr
+  );
 
   div.innerHTML = `
     <div class="reclamo-head">
@@ -447,21 +564,40 @@ async function renderReclamo(id, datos, umbral) {
     </div>
   `;
 
-  // Botón aprobar (solo si corresponde)
+  // Acciones del reclamo (aprobar / cancelar) o etiqueta de estado final.
   const foot = div.querySelector(".reclamo-foot");
+  const acciones = document.createElement("div");
+  acciones.className = "reclamo-acciones";
+
   if (estado === 3) {
     const ok = document.createElement("span");
     ok.className = "estado estado-liberado";
     ok.textContent = "Fondos liberados ✓";
-    foot.appendChild(ok);
-  } else if (soyGuardian) {
-    const btn = document.createElement("button");
-    btn.className = "btn btn-aprobar";
-    btn.textContent = puedeAprobar ? "Aprobar" : "Ya aprobaste";
-    btn.disabled = !puedeAprobar || !redOk;
-    btn.onclick = () => aprobarReclamo(id);
-    foot.appendChild(btn);
+    acciones.appendChild(ok);
+  } else if (estado === 4) {
+    const c = document.createElement("span");
+    c.className = "estado estado-cancelado";
+    c.textContent = "Cancelado ✕";
+    acciones.appendChild(c);
+  } else {
+    if (soyGuardian) {
+      const btn = document.createElement("button");
+      btn.className = "btn btn-aprobar";
+      btn.textContent = puedeAprobar ? "Aprobar" : "Ya aprobaste";
+      btn.disabled = !puedeAprobar || !redOk;
+      btn.onclick = () => aprobarReclamo(id);
+      acciones.appendChild(btn);
+    }
+    if (puedeCancelar) {
+      const btnC = document.createElement("button");
+      btnC.className = "btn btn-cancelar";
+      btnC.textContent = "Cancelar";
+      btnC.disabled = !redOk;
+      btnC.onclick = () => cancelarReclamo(id);
+      acciones.appendChild(btnC);
+    }
   }
+  foot.appendChild(acciones);
 
   return div;
 }
@@ -543,6 +679,23 @@ async function aprobarReclamo(id) {
   }
 }
 
+async function cancelarReclamo(id) {
+  ocultarAviso();
+  if (!confirm(`¿Seguro que querés cancelar el reclamo #${id}? Esta acción es definitiva.`)) return;
+  try {
+    mostrarOverlay(`Cancelando reclamo #${id}… confirmá en MetaMask.`);
+    const tx = await contrato.cancelarReclamo(id);
+    mostrarOverlay("Registrando la cancelación en Sepolia…");
+    await tx.wait();
+    toast(`Reclamo #${id} cancelado`, "info");
+    await refrescarTodo();
+  } catch (err) {
+    mostrarAviso(mensajeDeError(err), true);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 //  ENGANCHE DE EVENTOS DEL DOM
 // ───────────────────────────────────────────────────────────────────────────
@@ -564,6 +717,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const esClaro = document.documentElement.classList.toggle("light");
     try { localStorage.setItem("fv-tema", esClaro ? "light" : "dark"); } catch (e) {}
     sincronizarIconoTema();
+  });
+
+  // Filtros de la lista de reclamos (Activos / Liberados / Cancelados / Todos).
+  document.querySelectorAll("[data-filtro]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      filtroReclamos = tab.getAttribute("data-filtro");
+      document.querySelectorAll("[data-filtro]").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      refrescarReclamos();
+    });
   });
 
   // Sidebar: resaltar el ítem activo al navegar entre secciones.

@@ -41,7 +41,8 @@ contract FamilyVault {
         Abierto,    // 0 — creado, sin aprobaciones
         Pendiente,  // 1 — con aprobaciones, por debajo del umbral
         Aprobado,   // 2 — umbral alcanzado (transitorio)
-        Liberado    // 3 — fondos transferidos (final)
+        Liberado,   // 3 — fondos transferidos (final)
+        Cancelado   // 4 — anulado por el solicitante o el admin (final)
     }
 
     /// @notice Estructura de un reclamo de liberación de fondos.
@@ -105,6 +106,8 @@ contract FamilyVault {
         address indexed destino,
         uint256 monto
     );
+    /// @dev Un reclamo fue anulado antes de liberarse (por el solicitante o el admin).
+    event ReclamoCancelado(uint256 indexed idReclamo, address indexed porQuien);
 
     // ───────────────────────────────────────────────────────────────────────
     //  MODIFICADORES — control de acceso y validaciones de estado
@@ -250,6 +253,7 @@ contract FamilyVault {
 
         // CHECKS — validaciones de estado y de acceso
         require(r.estado != EstadoReclamo.Liberado, "FamilyVault: ya liberado");
+        require(r.estado != EstadoReclamo.Cancelado, "FamilyVault: reclamo cancelado");
         require(!aprobadoPor[idReclamo][msg.sender], "FamilyVault: ya aprobaste");
 
         // EFFECTS — registramos la aprobación y avanzamos en la máquina de estados
@@ -282,6 +286,30 @@ contract FamilyVault {
             (bool ok, ) = payable(destino).call{value: monto}("");
             require(ok, "FamilyVault: transferencia fallo");
         }
+    }
+
+    /**
+     * @notice Anula un reclamo todavía no liberado. Transición a Cancelado (final).
+     * @param idReclamo Identificador del reclamo a cancelar.
+     *
+     * @dev Control de acceso: solo el solicitante que lo abrió o el admin.
+     *      Validación de estado: no se puede cancelar si ya está Liberado ni
+     *      volver a cancelar uno ya Cancelado. No mueve fondos.
+     */
+    function cancelarReclamo(uint256 idReclamo)
+        external
+        reclamoExiste(idReclamo)
+    {
+        Reclamo storage r = reclamos[idReclamo];
+        require(
+            msg.sender == r.solicitante || msg.sender == admin,
+            "FamilyVault: solo solicitante o admin"
+        );
+        require(r.estado != EstadoReclamo.Liberado, "FamilyVault: ya liberado");
+        require(r.estado != EstadoReclamo.Cancelado, "FamilyVault: ya cancelado");
+
+        r.estado = EstadoReclamo.Cancelado;
+        emit ReclamoCancelado(idReclamo, msg.sender);
     }
 
     // ───────────────────────────────────────────────────────────────────────

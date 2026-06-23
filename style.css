@@ -280,6 +280,58 @@ textarea { resize: vertical; }
 .spinner { width: 42px; height: 42px; margin: 0 auto; border: 3px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Tabs (filtros de reclamos) ── */
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab {
+  font-family: inherit; font-size: 12.5px; font-weight: 600;
+  padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  background: var(--surface-2); color: var(--ink-soft);
+  border: 1px solid var(--border); transition: background .15s, color .15s;
+}
+.tab:hover { color: var(--ink); }
+.tab.active { background: var(--nav-active-bg); color: var(--brand); border-color: transparent; }
+
+/* ── Chips de estadísticas ── */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; }
+.chip strong { color: var(--ink); font-weight: 700; }
+
+/* ── Acciones de guardián / reclamo ── */
+.g-info { flex: 1; min-width: 0; }
+.g-acciones { display: flex; gap: 4px; margin-left: auto; }
+.mini-btn {
+  width: 26px; height: 26px; flex: none;
+  display: grid; place-items: center; text-decoration: none;
+  font-size: 13px; cursor: pointer; color: var(--ink-soft);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+  transition: background .15s, color .15s;
+}
+.mini-btn:hover { background: var(--surface-2); color: var(--brand); }
+.reclamo-acciones { display: flex; gap: 8px; align-items: center; }
+.btn-cancelar { background: transparent; color: var(--danger); border: 1px solid var(--border-strong); padding: 8px 14px; font-size: 13px; }
+.btn-cancelar:hover:not(:disabled) { background: rgba(239,68,68,.1); border-color: var(--danger); }
+.estado-cancelado { background: var(--tint); color: var(--muted); }
+
+/* ── Toasts ── */
+.toasts { position: fixed; top: 18px; right: 18px; z-index: 200; display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--border); border-left: 4px solid var(--brand);
+  border-radius: 12px; padding: 12px 15px; font-size: 13.5px; font-weight: 500;
+  box-shadow: 0 12px 34px rgba(0,0,0,.3);
+  transform: translateX(120%); opacity: 0; transition: transform .3s ease, opacity .3s ease;
+}
+.toast.show { transform: translateX(0); opacity: 1; }
+.toast-ico { font-size: 16px; }
+.toast-ok { border-left-color: var(--ok); }
+.toast-error { border-left-color: var(--danger); }
+
+/* ── Confeti ── */
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 150; }
+.confeti { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px; opacity: .95; animation: caer linear forwards; }
+@keyframes caer { to { transform: translateY(105vh) rotate(720deg); opacity: 1; } }
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }

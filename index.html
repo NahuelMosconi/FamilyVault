@@ -180,9 +180,15 @@
           <div class="card-head">
             <div>
               <h2>📋 Reclamos de liberación</h2>
-              <p class="card-sub">Cada reclamo recorre: Abierto → Pendiente → Aprobado → Liberado.</p>
+              <p class="card-sub">Cada reclamo recorre: Abierto → Pendiente → Aprobado → Liberado (o Cancelado).</p>
             </div>
             <button id="btn-refrescar" class="btn btn-ghost" disabled>↻ Refrescar</button>
+          </div>
+          <div class="tabs">
+            <button class="tab active" data-filtro="activos">Activos</button>
+            <button class="tab" data-filtro="liberados">Liberados</button>
+            <button class="tab" data-filtro="cancelados">Cancelados</button>
+            <button class="tab" data-filtro="todos">Todos</button>
           </div>
           <div id="lista-reclamos" class="reclamos">
             <p class="vacio">Conectá tu wallet para ver los reclamos.</p>
@@ -195,6 +201,11 @@
             <div>
               <h2>🧾 Historial de actividad</h2>
               <p class="card-sub">Depósitos y reclamos registrados en la blockchain. No se pierde al recargar.</p>
+            </div>
+            <div class="chips">
+              <span class="chip">Depositado histórico: <strong id="stat-depositado">— ETH</strong></span>
+              <span class="chip">Liberado histórico: <strong id="stat-liberado">— ETH</strong></span>
+              <span class="chip">Reclamos: <strong id="stat-reclamos">—</strong></span>
             </div>
           </div>
           <ul id="log-eventos" class="historial">
@@ -210,6 +221,10 @@
       </footer>
     </div>
   </div>
+
+  <!-- Notificaciones (toasts) y confeti -->
+  <div id="toasts" class="toasts"></div>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
 
   <!-- Overlay de carga -->
   <div id="overlay" class="overlay" hidden>
