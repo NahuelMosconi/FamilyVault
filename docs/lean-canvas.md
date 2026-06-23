@@ -31,7 +31,7 @@ sin backend**. El producto **no tiene funcionalidad de IA**: la IA se usó
 | 1 | **Problema** | No existe una forma confiable de guardar un fondo familiar que una sola persona no pueda vaciar y que se libere solo por acuerdo del grupo. |
 | 2 | **Segmentos de clientes** | Familias separadas geográficamente / migrantes; hogares con cultura cripto. Extensible a cooperativas y grupos de ayuda mutua. |
 | 3 | **Propuesta de valor única** | Un fondo de emergencia que nadie solo puede tocar y que se libera únicamente cuando la familia lo certifica en conjunto, con total transparencia. |
-| 4 | **Solución** | Contrato inteligente multifirma (umbral M de N) que custodia y libera por consenso, con eventos públicos y una máquina de estados del reclamo. |
+| 4 | **Solución** | Contrato inteligente multifirma (umbral M de N) que custodia y libera por consenso, con eventos públicos y una máquina de estados del reclamo. Incluye recuperación social de guardianes y una **fábrica multi-familia** (escala sin base de datos central: la blockchain es la base de datos). |
 | 5 | **Canales** | Comunidades cripto, universidades, boca a boca, redes sociales y código abierto en GitHub. |
 | 6 | **Fuentes de ingresos** | Proyecto open source: donaciones, fee opcional muy bajo, servicios premium de recuperación, versión empresarial. El MVP **no monetiza**. |
 | 7 | **Estructura de costos** | Gas (lo paga quien firma cada transacción), hosting estático gratuito, desarrollo y auditoría futura. |

@@ -27,35 +27,55 @@ arriesgado.
 
 Un **contrato inteligente multifirma (M de N)** que custodia el fondo y lo libera
 **por consenso**. Cada pedido de liberación es un *reclamo* que recorre una
-**máquina de estados** y solo termina liberando los fondos al beneficiario cuando
-alcanza el umbral de aprobaciones definido por la familia.
+**máquina de estados** y solo termina liberando los fondos **a quien lo solicitó**
+cuando alcanza el umbral de aprobaciones definido por la familia.
 
 - Ninguna persona sola ni una minoría puede tocar los fondos.
-- Cada acción (depósito, reclamo, aprobación, liberación) queda registrada como
-  **evento público** en la blockchain, verificable por cualquiera.
-- No hay backend ni intermediario: la familia mantiene el control total
-  (solución **no-custodial**).
+- Cada acción (depósito, reclamo, aprobación, liberación, cancelación, rotación)
+  queda registrada como **evento público** en la blockchain, verificable por cualquiera.
+- No hay backend ni base de datos: **la blockchain es la base de datos** compartida
+  e inviolable. La familia mantiene el control total (solución **no-custodial**).
+
+## ✨ Funcionalidades
+
+- 💰 **Depósitos** de cualquiera al fondo común.
+- 🚨 **Reclamos de emergencia** con descripción, monto y hash de evidencia.
+- ✍️ **Aprobación multifirma (M de N)**; al alcanzar el umbral se liberan los fondos
+  **al solicitante**.
+- 🚫 **Cancelación** de un reclamo por su autor o el admin (estado `Cancelado`).
+- 🎯 **Meta de ahorro** del fondo con barra de progreso.
+- 🔁 **Recuperación social de guardianes**: reemplazar por consenso a un integrante
+  que perdió su clave.
+- 🏭 **Multi-familia**: un contrato `FamilyVaultFactory` permite que cualquier familia
+  cree su propia bóveda (escala a uso masivo sin base de datos central).
+- 📊 **Historial on-chain**, estadísticas y aportes por integrante.
+- 🌗 Interfaz **SaaS** con tema claro/oscuro, notificaciones y confeti al liberar.
 
 ## ⚙️ Cómo funciona (flujo de uso)
 
-1. **Despliegue:** un integrante despliega el contrato indicando los
-   **guardianes** (las direcciones de la familia), el **umbral M** (ej. 3 de 5) y
-   el **beneficiario** (quién recibe los fondos).
+1. **Despliegue:** un integrante despliega el contrato indicando los **guardianes**
+   (las direcciones de la familia) y el **umbral M** (ej. 3 de 4).
 2. **Depositar:** cualquiera suma ETH de prueba al fondo.
 3. **Reportar emergencia:** un guardián crea un **reclamo** (descripción + hash de
    evidencia opcional + monto a liberar). Estado inicial: **Abierto**.
 4. **Aprobar:** los guardianes aprueban el reclamo. Cada aprobación es una firma
    con su clave privada. El estado pasa a **Pendiente**.
 5. **Liberación automática:** cuando se alcanza el umbral M, el contrato pasa el
-   reclamo a **Aprobado → Liberado** y transfiere los fondos al beneficiario, todo
+   reclamo a **Aprobado → Liberado** y transfiere los fondos **al solicitante**, todo
    en la misma transacción.
 
 ```
-Abierto ──► Pendiente ──► Aprobado ──► Liberado
- (creado)   (aprob<M)     (aprob==M)   (fondos enviados)
+Abierto ──► Pendiente ──► Aprobado ──► Liberado        (cancelar) ──► Cancelado
+ (creado)   (aprob<M)     (aprob==M)   (al solicitante)
 ```
 
 Detalle del autómata: ver [`docs/diagrama-estados.md`](docs/diagrama-estados.md).
+
+## 🖼️ Capturas
+
+| Tema oscuro | Tema claro |
+|-------------|------------|
+| ![Tema oscuro](docs/img/captura-dark.png) | ![Tema claro](docs/img/captura-light.png) |
 
 ## 🧱 Stack tecnológico
 
@@ -79,14 +99,18 @@ familyvault/
 ├── app.js                     # Lógica web3 (ethers.js v6 + MetaMask)
 ├── config.js                  # Dirección del contrato + red + ABI embebido
 ├── contract/
-│   ├── FamilyVault.sol        # Contrato (máquina de estados + seguridad + eventos)
-│   ├── FamilyVault.abi.json   # ABI (reemplazar por el exacto de Remix si recompilás)
-│   └── DEPLOY.md              # Guía paso a paso de despliegue y guion de demo
+│   ├── FamilyVault.sol         # Contrato (máquina de estados + seguridad + eventos)
+│   ├── FamilyVaultFactory.sol  # Fábrica multi-familia (uso masivo)
+│   ├── mocks/AtacanteReentrancy.sol  # Contrato atacante (solo para tests)
+│   ├── FamilyVault.abi.json    # ABI (reemplazar por el exacto de Remix si recompilás)
+│   └── DEPLOY.md               # Guía paso a paso de despliegue y guion de demo
 ├── docs/
 │   ├── memoria-tecnica.md     # Memoria técnica (9 secciones del PDF)
 │   ├── lean-canvas.md         # Lean Canvas completo
 │   ├── pitch-deck.md          # Pitch deck diapositiva por diapositiva
-│   └── diagrama-estados.md    # Máquina de estados del reclamo
+│   ├── diagrama-estados.md    # Máquina de estados del reclamo
+│   ├── guia-defensa.md        # Guía para la presentación oral
+│   └── img/                   # Capturas de la interfaz
 ├── test/                      # (Opcional) tests de Hardhat
 ├── vercel.json
 ├── .gitignore
@@ -101,10 +125,10 @@ video**) está en **[`contract/DEPLOY.md`](contract/DEPLOY.md)**.
 
 Resumen rápido:
 
-1. **Desplegar el contrato** (Remix → Sepolia) pasando guardianes, umbral y
-   beneficiario. Copiar la dirección.
+1. **Desplegar el contrato** (Remix → Sepolia) pasando los **guardianes** y el
+   **umbral**. Copiar la dirección.
 2. **Configurar el frontend:** pegar la dirección en `config.js`
-   (`CONTRACT_ADDRESS`). El ABI ya viene embebido.
+   (`CONTRACT_ADDRESS`) y los nombres en `NOMBRES`. El ABI ya viene embebido.
 3. **Correr el frontend** localmente:
    ```bash
    python3 -m http.server 5500
@@ -143,8 +167,12 @@ git push -u origin main
   `Liberado` *antes* de transferir el ETH) + candado `noReentrante` como defensa
   en profundidad.
 - **Validaciones de estado:** no se puede aprobar dos veces el mismo guardián
-  (`aprobadoPor`), ni liberar dos veces un reclamo (`require(estado != Liberado)`).
+  (`aprobadoPor`), ni liberar/cancelar dos veces un reclamo.
 - **Eventos:** cada acción emite un evento para dejar traza pública auditable.
+- **Tests (Hardhat):** **27 pruebas** cubren depósito, control de acceso, anti
+  doble-aprobación, liberación al umbral, cancelación, meta, rotación de guardianes,
+  la fábrica multi-familia y un **test de reentrancy** con un contrato atacante que
+  intenta drenar fondos y es rechazado. Correr con `npm install && npx hardhat test`.
 
 ## 📚 Documentación
 

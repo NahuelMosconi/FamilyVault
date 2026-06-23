@@ -10,13 +10,17 @@
 
 Modelamos el reclamo como un autómata finito determinista (AFD) `A = (Q, Σ, δ, q₀, F)`:
 
-- **Q** (conjunto de estados): `{ Abierto, Pendiente, Aprobado, Liberado }`
+- **Q** (conjunto de estados): `{ Abierto, Pendiente, Aprobado, Liberado, Cancelado }`
 - **Σ** (alfabeto / eventos de entrada):
   - `aprobar_sub` → llega una aprobación y el total sigue **por debajo** del umbral M.
   - `aprobar_umbral` → llega una aprobación que **alcanza** el umbral M.
+  - `cancelar` → el solicitante (o el admin) anula el reclamo antes de liberarse.
 - **q₀** (estado inicial): `Abierto` (al ejecutarse `crearReclamo`).
-- **F** (estados de aceptación / finales): `{ Liberado }`.
+- **F** (estados de aceptación / finales): `{ Liberado, Cancelado }`.
 - **δ** (función de transición): definida en la tabla de abajo.
+
+> Nota: cuando los fondos se liberan, van **al solicitante** del reclamo (quien
+> pidió la ayuda). No hay un beneficiario fijo.
 
 > Nota de implementación: en el contrato, `Aprobado` es un estado **transitorio**.
 > Cuando se alcanza el umbral, la misma transacción avanza de `Aprobado` a
@@ -30,15 +34,19 @@ Modelamos el reclamo como un autómata finito determinista (AFD) `A = (Q, Σ, δ
 | Estado actual | Evento (símbolo)   | Estado siguiente | Condición / efecto                                  |
 |---------------|--------------------|------------------|-----------------------------------------------------|
 | Abierto       | `aprobar_sub`      | Pendiente        | `aprobaciones < M` · suma 1 aprobación              |
-| Abierto       | `aprobar_umbral`   | Aprobado→Liberado| `M == 1` · alcanza umbral y transfiere              |
+| Abierto       | `aprobar_umbral`   | Aprobado→Liberado| `M == 1` · alcanza umbral y transfiere al solicitante|
+| Abierto       | `cancelar`         | Cancelado        | solicitante o admin · no mueve fondos              |
 | Pendiente     | `aprobar_sub`      | Pendiente        | sigue `< M` · suma 1 aprobación                     |
-| Pendiente     | `aprobar_umbral`   | Aprobado→Liberado| `aprobaciones == M` · transfiere al beneficiario    |
+| Pendiente     | `aprobar_umbral`   | Aprobado→Liberado| `aprobaciones == M` · transfiere al solicitante     |
+| Pendiente     | `cancelar`         | Cancelado        | solicitante o admin · no mueve fondos              |
 | Liberado      | (cualquiera)       | — (rechaza)      | estado final: `require(estado != Liberado)`         |
+| Cancelado     | (cualquiera)       | — (rechaza)      | estado final: `require(estado != Cancelado)`        |
 
 Transiciones **no válidas** (el contrato las revierte, son "palabras" no aceptadas):
 
 - Aprobar dos veces el mismo guardián el mismo reclamo → `require(!aprobadoPor[...])`.
-- Aprobar un reclamo ya `Liberado` → `require(estado != Liberado)`.
+- Aprobar un reclamo ya `Liberado` o `Cancelado` → `require(...)`.
+- Cancelar un reclamo ya `Liberado` o por alguien que no sea el solicitante/admin.
 - Crear o aprobar siendo no-guardián → `modifier soloGuardian`.
 
 ## Diagrama (Mermaid)
@@ -53,9 +61,13 @@ stateDiagram-v2
     Pendiente --> Pendiente : aprobar()\n[aprobaciones < M]
     Pendiente --> Aprobado : aprobar()\n[aprobaciones == M]
 
+    Abierto --> Cancelado : cancelarReclamo()\n[solicitante o admin]
+    Pendiente --> Cancelado : cancelarReclamo()\n[solicitante o admin]
+
     Aprobado --> Liberado : transferencia interna\n(checks-effects-interactions)
 
     Liberado --> [*]
+    Cancelado --> [*]
 
     note right of Aprobado
         Estado transitorio.
@@ -99,10 +111,21 @@ stateDiagram-v2
 
 ## Correspondencia con el código (`FamilyVault.sol`)
 
-- `enum EstadoReclamo { Abierto, Pendiente, Aprobado, Liberado }` → conjunto **Q**.
+- `enum EstadoReclamo { Abierto, Pendiente, Aprobado, Liberado, Cancelado }` → conjunto **Q**.
 - `crearReclamo(...)` → transición inicial a `q₀ = Abierto`.
 - `aprobar(idReclamo)` → procesa un símbolo de Σ y aplica `δ`:
   - Si `aprobaciones < umbral` ⇒ `Pendiente`.
-  - Si `aprobaciones >= umbral` ⇒ `Aprobado` y, atómicamente, `Liberado`.
+  - Si `aprobaciones >= umbral` ⇒ `Aprobado` y, atómicamente, `Liberado` (al solicitante).
+- `cancelarReclamo(idReclamo)` → transición a `Cancelado` (final), solo solicitante/admin.
 - Las guardas (`require`) implementan el rechazo de transiciones inválidas, igual
   que un AFD no acepta símbolos fuera de su función de transición definida.
+
+## Segunda máquina de estados: rotación de guardianes (recuperación social)
+
+La función de recuperación social también es un autómata: una **propuesta de
+rotación** recorre `Propuesta → (aprobaciones) → Aplicada`. Estados
+`{ Propuesta, Aplicada }`, evento `aprobar_rotacion`, y al alcanzar el umbral M
+se ejecuta el reemplazo del guardián (transición a `Aplicada`, final). Mismas
+guardas que los reclamos: control de acceso (`soloGuardian`), anti doble-voto
+(`aprobadoRotacion`) y validación de estado (no reejecutar una rotación aplicada).
+Es otra evidencia de modelar el sistema como composición de máquinas de estado.

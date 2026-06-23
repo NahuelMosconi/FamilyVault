@@ -201,4 +201,77 @@ describe("FamilyVault", function () {
         .to.be.revertedWith("FamilyVault: ya liberado");
     });
   });
+
+  describe("Meta del fondo", function () {
+    it("solo el admin puede fijar la meta", async function () {
+      await expect(vault.connect(g1).fijarMeta(ethers.parseEther("1")))
+        .to.be.revertedWith("FamilyVault: solo el admin");
+      await expect(vault.connect(admin).fijarMeta(ethers.parseEther("2")))
+        .to.emit(vault, "MetaFijada");
+      expect(await vault.meta()).to.equal(ethers.parseEther("2"));
+    });
+  });
+
+  describe("Recuperación social (rotación de guardianes)", function () {
+    it("rota un guardián al alcanzar el umbral", async function () {
+      // Reemplazar g3 por 'extrano'. Umbral 2: hace falta 2 aprobaciones.
+      await vault.connect(g1).proponerRotacion(g3.address, extrano.address);
+      await vault.connect(g1).aprobarRotacion(0); // 1/2
+      let rot = await vault.obtenerRotacion(0);
+      expect(rot.ejecutada).to.equal(false);
+
+      await expect(vault.connect(g2).aprobarRotacion(0)) // 2/2 -> ejecuta
+        .to.emit(vault, "GuardianRotado");
+
+      expect(await vault.esGuardian(g3.address)).to.equal(false);
+      expect(await vault.esGuardian(extrano.address)).to.equal(true);
+      const lista = await vault.obtenerGuardianes();
+      expect(lista).to.include(extrano.address);
+      expect(lista).to.not.include(g3.address);
+    });
+
+    it("no permite proponer reemplazar a un no-guardián", async function () {
+      await expect(vault.connect(g1).proponerRotacion(extrano.address, g2.address))
+        .to.be.revertedWith("FamilyVault: viejo no es guardian");
+    });
+
+    it("un no-guardián no puede aprobar una rotación", async function () {
+      await vault.connect(g1).proponerRotacion(g3.address, extrano.address);
+      await expect(vault.connect(extrano).aprobarRotacion(0))
+        .to.be.revertedWith("FamilyVault: solo guardianes");
+    });
+  });
+
+  describe("Seguridad: defensa anti-reentrancy", function () {
+    it("un receptor malicioso NO puede drenar fondos al reentrar", async function () {
+      const Atacante = await ethers.getContractFactory("AtacanteReentrancy");
+      const atacante = await Atacante.deploy();
+      await atacante.waitForDeployment();
+      const dirAtacante = await atacante.getAddress();
+
+      // Desplegamos una bóveda con el atacante como guardián (umbral 2 de 3).
+      const Vault = await ethers.getContractFactory("FamilyVault");
+      const v = await Vault.deploy([dirAtacante, g2.address, g3.address], 2);
+      await v.waitForDeployment();
+      await atacante.setVault(await v.getAddress());
+
+      // Fondeamos con más de lo que pide el reclamo, para ver si logra drenar de más.
+      await v.connect(g2).depositar({ value: ethers.parseEther("1.0") });
+
+      // El atacante abre un reclamo por 0.5 a su favor y lo aprueba (1/2).
+      await atacante.crear(ethers.parseEther("0.5"));
+      await atacante.aprobar(0);
+
+      // g2 da la 2da aprobación: dispara la transferencia al atacante (reentra).
+      await v.connect(g2).aprobar(0);
+
+      // El atacante intentó reentrar...
+      expect(await atacante.intentoReentrar()).to.equal(true);
+      // ...pero el contrato solo soltó 0.5: quedan 0.5 (no se drenó de más).
+      expect(await v.balance()).to.equal(ethers.parseEther("0.5"));
+      // Y el reclamo quedó Liberado (no se pudo volver a liberar).
+      const r = await v.obtenerReclamo(0);
+      expect(r.estado).to.equal(3n);
+    });
+  });
 });

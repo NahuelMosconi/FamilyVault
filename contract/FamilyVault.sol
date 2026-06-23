@@ -79,6 +79,23 @@ contract FamilyVault {
     ///         aprobadoPor[idReclamo][direccionGuardian] == true si ya aprobó.
     mapping(uint256 => mapping(address => bool)) public aprobadoPor;
 
+    /// @notice Meta opcional de ahorro del fondo (0 = sin meta). La fija el admin.
+    uint256 public meta;
+
+    /// @notice Propuesta de rotación de guardián (recuperación social).
+    struct Rotacion {
+        address viejo;          // guardián a reemplazar
+        address nuevo;          // dirección que entra en su lugar
+        uint256 aprobaciones;   // aprobaciones acumuladas
+        bool ejecutada;         // ya se aplicó el cambio
+    }
+
+    /// @notice Todas las propuestas de rotación de guardianes.
+    Rotacion[] public rotaciones;
+
+    /// @notice ¿Este guardián ya aprobó esta rotación? (evita doble voto)
+    mapping(uint256 => mapping(address => bool)) public aprobadoRotacion;
+
     /// @dev Bandera de reentrancy (defensa en profundidad, además de checks-effects-interactions).
     bool private _bloqueado;
 
@@ -108,6 +125,12 @@ contract FamilyVault {
     );
     /// @dev Un reclamo fue anulado antes de liberarse (por el solicitante o el admin).
     event ReclamoCancelado(uint256 indexed idReclamo, address indexed porQuien);
+    /// @dev El admin fijó (o cambió) la meta de ahorro del fondo.
+    event MetaFijada(uint256 meta);
+    /// @dev Recuperación social: ciclo de vida de una rotación de guardián.
+    event RotacionPropuesta(uint256 indexed idRotacion, address indexed viejo, address indexed nuevo, address proponente);
+    event RotacionAprobada(uint256 indexed idRotacion, address indexed guardian, uint256 aprobaciones, uint256 umbral);
+    event GuardianRotado(uint256 indexed idRotacion, address indexed viejo, address indexed nuevo);
 
     // ───────────────────────────────────────────────────────────────────────
     //  MODIFICADORES — control de acceso y validaciones de estado
@@ -189,6 +212,12 @@ contract FamilyVault {
     /// @notice Permite recibir ETH enviado directo al contrato (sin calldata).
     receive() external payable {
         emit Deposito(msg.sender, msg.value, address(this).balance);
+    }
+
+    /// @notice El admin fija una meta de ahorro (objetivo del fondo). 0 = sin meta.
+    function fijarMeta(uint256 _meta) external soloAdmin {
+        meta = _meta;
+        emit MetaFijada(_meta);
     }
 
     // ───────────────────────────────────────────────────────────────────────
@@ -310,6 +339,84 @@ contract FamilyVault {
 
         r.estado = EstadoReclamo.Cancelado;
         emit ReclamoCancelado(idReclamo, msg.sender);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    //  RECUPERACIÓN SOCIAL — rotación de guardianes por consenso
+    // ───────────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Propone reemplazar un guardián (p. ej. perdió su clave) por uno nuevo.
+     *         El cambio NO es inmediato: requiere el mismo umbral de aprobaciones.
+     * @dev El que propone también deberá aprobar. Control de acceso: solo guardianes.
+     */
+    function proponerRotacion(address viejo, address nuevo)
+        external
+        soloGuardian
+        returns (uint256 idRotacion)
+    {
+        require(esGuardian[viejo], "FamilyVault: viejo no es guardian");
+        require(nuevo != address(0), "FamilyVault: nuevo cero");
+        require(!esGuardian[nuevo], "FamilyVault: nuevo ya es guardian");
+
+        idRotacion = rotaciones.length;
+        rotaciones.push(Rotacion({ viejo: viejo, nuevo: nuevo, aprobaciones: 0, ejecutada: false }));
+        emit RotacionPropuesta(idRotacion, viejo, nuevo, msg.sender);
+    }
+
+    /**
+     * @notice Aprueba una rotación. Al alcanzar el umbral, reemplaza al guardián.
+     * @dev Mismo patrón que los reclamos: anti doble-voto y validación de estado.
+     *      Cuando se ejecuta, se valida de nuevo (viejo sigue siendo guardián y
+     *      nuevo todavía no) para no dejar el conjunto inconsistente.
+     */
+    function aprobarRotacion(uint256 idRotacion) external soloGuardian {
+        require(idRotacion < rotaciones.length, "FamilyVault: rotacion inexistente");
+        Rotacion storage rot = rotaciones[idRotacion];
+        require(!rot.ejecutada, "FamilyVault: rotacion ejecutada");
+        require(!aprobadoRotacion[idRotacion][msg.sender], "FamilyVault: ya aprobaste");
+
+        aprobadoRotacion[idRotacion][msg.sender] = true;
+        rot.aprobaciones += 1;
+        emit RotacionAprobada(idRotacion, msg.sender, rot.aprobaciones, umbral);
+
+        if (rot.aprobaciones >= umbral) {
+            require(esGuardian[rot.viejo], "FamilyVault: viejo ya no es guardian");
+            require(!esGuardian[rot.nuevo], "FamilyVault: nuevo ya es guardian");
+
+            rot.ejecutada = true;
+            esGuardian[rot.viejo] = false;
+            esGuardian[rot.nuevo] = true;
+            // Reemplazamos la dirección en el arreglo de guardianes.
+            for (uint256 i = 0; i < guardianes.length; i++) {
+                if (guardianes[i] == rot.viejo) {
+                    guardianes[i] = rot.nuevo;
+                    break;
+                }
+            }
+            emit GuardianRotado(idRotacion, rot.viejo, rot.nuevo);
+        }
+    }
+
+    /// @notice Cantidad de propuestas de rotación creadas.
+    function cantidadRotaciones() external view returns (uint256) {
+        return rotaciones.length;
+    }
+
+    /// @notice Datos de una rotación para mostrarla en la UI.
+    function obtenerRotacion(uint256 idRotacion)
+        external
+        view
+        returns (address viejo, address nuevo, uint256 aprobaciones, bool ejecutada)
+    {
+        require(idRotacion < rotaciones.length, "FamilyVault: rotacion inexistente");
+        Rotacion storage rot = rotaciones[idRotacion];
+        return (rot.viejo, rot.nuevo, rot.aprobaciones, rot.ejecutada);
+    }
+
+    /// @notice ¿Un guardián ya aprobó una rotación? (para habilitar el botón)
+    function yaAproboRotacion(uint256 idRotacion, address guardian) external view returns (bool) {
+        return aprobadoRotacion[idRotacion][guardian];
     }
 
     // ───────────────────────────────────────────────────────────────────────

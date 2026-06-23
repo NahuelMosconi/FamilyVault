@@ -70,18 +70,23 @@ Para probar el flujo M de N necesitás varias direcciones (los guardianes).
      - `_GUARDIANES`: un array con las direcciones, entre corchetes y comillas.
        Ejemplo:
        ```
-       ["0xAAA...","0xBBB...","0xCCC...","0xDDD...","0xEEE..."]
+       ["0xAAA...","0xBBB...","0xCCC...","0xDDD..."]
        ```
-     - `_UMBRAL`: el número M de aprobaciones necesarias. Ejemplo: `3` (3 de 5).
-     - `_BENEFICIARIO`: la dirección que recibe los fondos. Ejemplo: `"0xFFF..."`.
+     - `_UMBRAL`: el número M de aprobaciones necesarias. Ejemplo: `3` (3 de 4).
    - Clic en **Deploy** (también podés usar el botón naranja **transact**).
      Confirmá la transacción en MetaMask y esperá a que se mine.
 5. Aparecerá el contrato desplegado en **"Deployed Contracts"**. Copiá su
    **dirección** (ícono de copiar).
 
+> Nota: **no hay beneficiario fijo** — cuando un reclamo se libera, los fondos van
+> a quien lo creó (el solicitante).
+>
 > Validaciones del constructor (si fallan, revisá los argumentos): debe haber al
-> menos un guardián, `1 <= M <= N`, sin direcciones repetidas ni `0x000...0`, y
-> el beneficiario no puede ser la dirección cero.
+> menos un guardián, `1 <= M <= N`, sin direcciones repetidas ni `0x000...0`.
+>
+> **Multi-familia (opcional):** también podés desplegar `FamilyVaultFactory.sol` y
+> llamar a `crearBoveda(guardianes, umbral)` para que cada familia genere su propia
+> bóveda desde un único contrato fábrica.
 
 ---
 
