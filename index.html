@@ -4,10 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FamilyVault — Bóveda Familiar de Emergencia</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Aplica el tema guardado lo antes posible para evitar parpadeo.
+    // Por defecto: oscuro. Se guarda la preferencia en localStorage.
+    (function () {
+      try {
+        var t = localStorage.getItem("fv-tema") || "dark";
+        if (t === "light") document.documentElement.classList.add("light");
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="app-shell">
@@ -15,7 +26,22 @@
     <!-- ───────────── Sidebar ───────────── -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo">🛡️</div>
+        <div class="brand-logo">
+          <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="FamilyVault">
+            <defs>
+              <linearGradient id="fvGrad" x1="6" y1="3" x2="42" y2="45" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366F1"/>
+                <stop offset="0.55" stop-color="#8B5CF6"/>
+                <stop offset="1" stop-color="#A855F7"/>
+              </linearGradient>
+            </defs>
+            <path d="M24 3.5l15.5 5.8v10.4c0 9.8-6.6 17.2-15.5 21.3C15.1 36.9 8.5 29.5 8.5 19.7V9.3L24 3.5z" fill="url(#fvGrad)"/>
+            <path d="M24 16.5 L17 28 M24 16.5 L31 28 M17 28 L31 28" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity="0.85"/>
+            <circle cx="24" cy="16.5" r="3.1" fill="#fff"/>
+            <circle cx="17" cy="28" r="3.1" fill="#fff"/>
+            <circle cx="31" cy="28" r="3.1" fill="#fff"/>
+          </svg>
+        </div>
         <div class="brand-text">
           <strong>FamilyVault</strong>
           <span>Bóveda familiar</span>
@@ -50,6 +76,7 @@
           <p>Fondo de emergencia custodiado por la familia, liberado por consenso.</p>
         </div>
         <div class="wallet">
+          <button id="btn-tema" class="btn-icon" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">☀️</button>
           <span id="red-badge" class="badge badge-gris" title="Red conectada">Sin conectar</span>
           <span id="cuenta" class="cuenta" hidden></span>
           <button id="btn-conectar" class="btn btn-primary">Conectar wallet</button>
