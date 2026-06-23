@@ -340,6 +340,15 @@ async function refrescarFondo() {
     soyGuardian = guardianes.some((g) => g.toLowerCase() === cuentaActual);
     $("btn-crear-reclamo").disabled = !redOk || !soyGuardian;
 
+    // Métricas del dashboard (cantidad de guardianes + rol de la wallet).
+    const elCant = $("stat-guardianes");
+    if (elCant) elCant.textContent = guardianes.length;
+    const elRol = $("mi-rol");
+    if (elRol) {
+      elRol.textContent = soyGuardian ? "Guardián" : "Invitado";
+      elRol.className = soyGuardian ? "pill pill-ok" : "pill pill-muted";
+    }
+
     // Render de la lista de guardianes
     const ul = $("lista-guardianes");
     ul.innerHTML = "";
@@ -543,6 +552,14 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-depositar").addEventListener("click", depositar);
   $("btn-crear-reclamo").addEventListener("click", crearReclamo);
   $("btn-refrescar").addEventListener("click", refrescarTodo);
+
+  // Sidebar: resaltar el ítem activo al navegar entre secciones.
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
+      item.classList.add("active");
+    });
+  });
 
   // Vista previa del hash de evidencia mientras se escribe.
   $("input-evidencia").addEventListener("input", (e) => {
