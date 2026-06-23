@@ -164,4 +164,41 @@ describe("FamilyVault", function () {
       expect(await vault.balance()).to.equal(ethers.parseEther("1.0"));
     });
   });
+
+  describe("Cancelación de reclamos", function () {
+    const CANCELADO = 4n;
+
+    beforeEach(async function () {
+      await vault.connect(g1).depositar({ value: ethers.parseEther("1.0") });
+      await vault.connect(g1).crearReclamo("Emergencia", ethers.ZeroHash, ethers.parseEther("0.5"));
+    });
+
+    it("el solicitante puede cancelar su reclamo", async function () {
+      await expect(vault.connect(g1).cancelarReclamo(0)).to.emit(vault, "ReclamoCancelado");
+      const r = await vault.obtenerReclamo(0);
+      expect(r.estado).to.equal(CANCELADO);
+    });
+
+    it("el admin también puede cancelar", async function () {
+      await expect(vault.connect(admin).cancelarReclamo(0)).to.emit(vault, "ReclamoCancelado");
+    });
+
+    it("un tercero no puede cancelar", async function () {
+      await expect(vault.connect(g2).cancelarReclamo(0))
+        .to.be.revertedWith("FamilyVault: solo solicitante o admin");
+    });
+
+    it("no se puede aprobar un reclamo cancelado", async function () {
+      await vault.connect(g1).cancelarReclamo(0);
+      await expect(vault.connect(g2).aprobar(0))
+        .to.be.revertedWith("FamilyVault: reclamo cancelado");
+    });
+
+    it("no se puede cancelar un reclamo ya liberado", async function () {
+      await vault.connect(g1).aprobar(0);
+      await vault.connect(g2).aprobar(0); // libera (umbral 2)
+      await expect(vault.connect(g1).cancelarReclamo(0))
+        .to.be.revertedWith("FamilyVault: ya liberado");
+    });
+  });
 });

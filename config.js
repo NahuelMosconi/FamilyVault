@@ -146,6 +146,25 @@ const CONTRACT_ABI = [
       {
         "indexed": true,
         "internalType": "address",
+        "name": "porQuien",
+        "type": "address"
+      }
+    ],
+    "name": "ReclamoCancelado",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "idReclamo",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "solicitante",
         "type": "address"
       },
@@ -232,6 +251,19 @@ const CONTRACT_ABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "idReclamo",
+        "type": "uint256"
+      }
+    ],
+    "name": "cancelarReclamo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
