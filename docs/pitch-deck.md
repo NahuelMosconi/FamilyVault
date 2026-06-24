@@ -56,9 +56,9 @@
 
 - **Flujo de uso (todo on-chain, en la testnet Sepolia):**
   1. **Depositar:** uno o varios guardianes envían fondos al contrato.
-  2. **Reportar emergencia:** un guardián crea un **reclamo** (claim) describiendo el caso y el beneficiario.
+  2. **Reportar emergencia:** un guardián crea un **reclamo** (claim) describiendo el caso y el monto a liberar.
   3. **Aprobar:** los demás guardianes revisan y **firman su aprobación** desde sus propias wallets.
-  4. **Liberar:** al alcanzar el **umbral M de N** aprobaciones, los fondos se **liberan automáticamente al beneficiario**.
+  4. **Liberar:** al alcanzar el **umbral M de N** aprobaciones, los fondos se **liberan automáticamente al solicitante** (quien creó el reclamo).
 - Todo es **verificable públicamente** en Sepolia / Etherscan: depósitos, reclamos, aprobaciones y la liberación final.
 
 > **Qué decir / cómo presentar:** Si es posible, **demo en vivo**. Mostrá MetaMask firmando una aprobación y, al completar el umbral, la transacción de liberación en Etherscan. Narrá cada paso: "Acá el segundo guardián firma… y al llegar a 2 de 3, el contrato libera solo." Tené video de respaldo por si la red falla. Mantené la demo corta y guionada.
@@ -80,7 +80,8 @@
   - **Abierto:** se crea el reclamo.
   - **Pendiente:** está juntando aprobaciones de guardianes.
   - **Aprobado:** se alcanzó el umbral M de N.
-  - **Liberado:** los fondos salieron al beneficiario (estado final/absorbente).
+  - **Liberado:** los fondos salieron al solicitante (estado final/absorbente).
+  - **Cancelado:** el reclamo se anuló antes de liberarse (estado final).
 - Las transiciones son **deterministas y validadas por el contrato**: solo se puede avanzar por los caminos permitidos.
 
 > **Qué decir / cómo presentar:** Esta es la conexión directa con **Teoría de la Computación II**: el reclamo es literalmente un autómata finito. Mostrá el diagrama de estados y subrayá que el contrato **rechaza toda transición inválida**, igual que un autómata rechaza una cadena que no pertenece al lenguaje. Es el puente entre la teoría de la materia y un producto real.

@@ -103,7 +103,7 @@ emergencia real.
 - **Custodia sin custodio.** El dinero lo guarda el **contrato**, no una persona;
   nadie puede retirarlo unilateralmente.
 - **Liberación por consenso.** Se necesita un **umbral M de N** de firmas de los
-  guardianes para liberar los fondos al beneficiario.
+  guardianes para liberar los fondos al solicitante (quien pidió la ayuda).
 - **Transparencia total e inviolable.** Cada aprobación y cada liberación queda
   registrada como **evento público** en la cadena; cualquier integrante puede
   auditar el estado en cualquier momento.

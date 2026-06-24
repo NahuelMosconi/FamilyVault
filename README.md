@@ -174,10 +174,25 @@ git push -u origin main
   la fábrica multi-familia y un **test de reentrancy** con un contrato atacante que
   intenta drenar fondos y es rechazado. Correr con `npm install && npx hardhat test`.
 
+## 📦 Entregables del trabajo (mapa para el jurado)
+
+| Entregable obligatorio | Dónde está |
+|------------------------|------------|
+| **README principal** | este archivo |
+| **Lean Canvas** | [docs/lean-canvas.md](docs/lean-canvas.md) |
+| **Memoria técnica** (9 secciones) | [docs/memoria-tecnica.md](docs/memoria-tecnica.md) |
+| **Pitch Deck** | [docs/pitch-deck.md](docs/pitch-deck.md) |
+| **Evidencias del MVP** | [docs/evidencias-mvp.md](docs/evidencias-mvp.md) |
+| **Video demo** | enlace en "Enlaces y entregables" (abajo) |
+
+Material complementario: [diagrama de estados](docs/diagrama-estados.md) ·
+[guía de defensa](docs/guia-defensa.md) · [guía de despliegue y demo](contract/DEPLOY.md).
+
 ## 📚 Documentación
 
 - [Memoria técnica](docs/memoria-tecnica.md) — las 9 secciones exigidas.
 - [Lean Canvas](docs/lean-canvas.md)
+- [Evidencias del MVP](docs/evidencias-mvp.md)
 - [Pitch deck](docs/pitch-deck.md)
 - [Diagrama de estados](docs/diagrama-estados.md)
 - [Guía de despliegue y demo](contract/DEPLOY.md)
