@@ -128,8 +128,8 @@
 
   | Nombre | Rol |
   |---|---|
-  | *[Lucas o Adriano]* | Blockchain / Smart Contract (Solidity) |
-  | *[Lucas o Adriano]* | Frontend / Web3 (ethers.js + MetaMask) |
+  | **Lucas** | Blockchain / Smart Contract (Solidity) |
+  | **Adriano** | Frontend / Web3 (ethers.js + MetaMask) |
   | **Nahuel Mosconi** | Documentación / Investigación |
   | **Ignacio Escarcha** | Coordinación / Pitch |
 

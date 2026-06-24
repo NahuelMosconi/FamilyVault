@@ -226,12 +226,10 @@ generar documentación. Detalle en la memoria técnica, sección 4.
 
 | Integrante | Rol |
 |------------|-----|
-| `[por asignar]` | 🔗 Blockchain / Smart Contract |
-| `[por asignar]` | 💻 Frontend / Integración Web3 |
+| **Lucas** | 🔗 Blockchain / Smart Contract |
+| **Adriano** | 💻 Frontend / Integración Web3 |
 | **Nahuel Mosconi** | 📄 Documentación / Investigación |
 | **Ignacio Escarcha** | 🎤 Coordinación / Pitch |
-
-> Integrantes pendientes de asignar: **Lucas** y **Adriano** (roles Blockchain y Frontend).
 
 ## Licencia
 

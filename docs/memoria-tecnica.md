@@ -293,8 +293,8 @@ seguridad a implementar.
 ### Roles
 | Integrante | Rol principal | Responsabilidades |
 |------------|---------------|-------------------|
-| `[por asignar — Lucas o Adriano]` | Blockchain / Smart Contract | Diseño del contrato, máquina de estados, seguridad, tests y despliegue en Sepolia |
-| `[por asignar — Lucas o Adriano]` | Frontend / Integración Web3 | UI, integración ethers.js + MetaMask, manejo de eventos y errores, deploy en Vercel |
+| **Lucas** | Blockchain / Smart Contract | Diseño del contrato, máquina de estados, seguridad, tests y despliegue en Sepolia |
+| **Adriano** | Frontend / Integración Web3 | UI, integración ethers.js + MetaMask, manejo de eventos y errores, deploy en Vercel |
 | **Nahuel Mosconi** | Documentación / Investigación | Memoria técnica, lean canvas, evidencias del MVP, investigación del problema y referencias |
 | **Ignacio Escarcha** | Coordinación / Pitch | Coordinación, backlog, guion y grabación de la demo, presentación ante el jurado |
 
