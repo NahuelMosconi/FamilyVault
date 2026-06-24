@@ -222,13 +222,16 @@ generar documentación. Detalle en la memoria técnica, sección 4.
 
 ---
 
-## 👥 Equipo (completar)
+## 👥 Equipo
 
 | Integrante | Rol |
 |------------|-----|
-| `[Nombre]` | `[Rol — ej. Contrato/Solidity]` |
-| `[Nombre]` | `[Rol — ej. Frontend/dApp]` |
-| `[Nombre]` | `[Rol — ej. Documentación/Pitch]` |
+| `[por asignar]` | 🔗 Blockchain / Smart Contract |
+| `[por asignar]` | 💻 Frontend / Integración Web3 |
+| **Nahuel Mosconi** | 📄 Documentación / Investigación |
+| **Ignacio Escarcha** | 🎤 Coordinación / Pitch |
+
+> Integrantes pendientes de asignar: **Lucas** y **Adriano** (roles Blockchain y Frontend).
 
 ## Licencia
 

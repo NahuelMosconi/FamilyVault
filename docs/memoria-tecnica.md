@@ -290,13 +290,13 @@ seguridad a implementar.
 
 ## 7. Trabajo en equipo
 
-### Roles (plantilla para completar)
+### Roles
 | Integrante | Rol principal | Responsabilidades |
 |------------|---------------|-------------------|
-| `[Nombre]` | Contrato / Solidity | Diseño del contrato, máquina de estados, seguridad, despliegue en Sepolia |
-| `[Nombre]` | Frontend / dApp | UI, integración ethers.js + MetaMask, manejo de eventos y errores |
-| `[Nombre]` | Documentación / Pitch | Memoria, lean canvas, pitch deck, guion y grabación de la demo |
-| `[Nombre]` | QA / Coordinación | Pruebas del flujo, gestión del backlog, integración |
+| `[por asignar — Lucas o Adriano]` | Blockchain / Smart Contract | Diseño del contrato, máquina de estados, seguridad, tests y despliegue en Sepolia |
+| `[por asignar — Lucas o Adriano]` | Frontend / Integración Web3 | UI, integración ethers.js + MetaMask, manejo de eventos y errores, deploy en Vercel |
+| **Nahuel Mosconi** | Documentación / Investigación | Memoria técnica, lean canvas, evidencias del MVP, investigación del problema y referencias |
+| **Ignacio Escarcha** | Coordinación / Pitch | Coordinación, backlog, guion y grabación de la demo, presentación ante el jurado |
 
 ### Organización y metodología
 - **Metodología ágil** con iteraciones cortas: primero lograr el flujo de punta a

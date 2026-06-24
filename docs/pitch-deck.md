@@ -126,14 +126,12 @@
 
 ## Diapositiva 9 — Equipo
 
-- *Plantilla para completar:*
-
   | Nombre | Rol |
   |---|---|
-  | *[Nombre 1]* | *[ej: Smart contracts / Solidity]* |
-  | *[Nombre 2]* | *[ej: Frontend / ethers.js + MetaMask]* |
-  | *[Nombre 3]* | *[ej: Diseño / UX y presentación]* |
-  | *[Nombre 4]* | *[ej: Investigación / modelado de autómatas y testing]* |
+  | *[Lucas o Adriano]* | Blockchain / Smart Contract (Solidity) |
+  | *[Lucas o Adriano]* | Frontend / Web3 (ethers.js + MetaMask) |
+  | **Nahuel Mosconi** | Documentación / Investigación |
+  | **Ignacio Escarcha** | Coordinación / Pitch |
 
 - Equipo de la materia **Teoría de la Computación II**.
 
