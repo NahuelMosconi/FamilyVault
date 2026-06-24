@@ -13,7 +13,7 @@
 
 // ── Dirección del contrato desplegado en Sepolia ───────────────────────────
 // TODO: pegar acá la dirección que devuelve Remix tras el deploy.
-const CONTRACT_ADDRESS = "0xFEA4dca7466DA64cA8f4928F6541cA445B49102d";
+const CONTRACT_ADDRESS = "0xfcA81001f59b6d56654bE6474776258E97674804";
 
 // ── Red esperada: Sepolia testnet ──────────────────────────────────────────
 const NETWORK = {
