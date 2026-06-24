@@ -23,8 +23,8 @@ de guardianes aprueba en la cadena.
 
 - **dApp en vivo:** `https://family-vault-lime.vercel.app`
 - **Repositorio GitHub (público):** `https://github.com/NahuelMosconi/FamilyVault`
-- **Contrato desplegado (Sepolia):** `[pegar la dirección final]`
-  → `https://sepolia.etherscan.io/address/[dirección]`
+- **Contrato desplegado (Sepolia):** `0xfcA81001f59b6d56654bE6474776258E97674804`
+  → `https://sepolia.etherscan.io/address/0xfcA81001f59b6d56654bE6474776258E97674804`
 - **Transacciones de ejemplo** (depósito / reclamo / aprobación / liberación):
   `[pegar links de Etherscan tras la demo]`
 - **Video demo:** `[pegar enlace]`
