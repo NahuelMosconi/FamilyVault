@@ -82,6 +82,18 @@ contract FamilyVault {
     /// @notice Meta opcional de ahorro del fondo (0 = sin meta). La fija el admin.
     uint256 public meta;
 
+    /// @notice Tope máximo de la comisión de protocolo, en puntos básicos (200 = 2%).
+    ///         Es una CONSTANTE del código: ni el admin puede superarla. Da garantía
+    ///         a las familias de que la comisión nunca podrá abusar del fondo.
+    uint256 public constant MAX_FEE_BIPS = 200;
+
+    /// @notice Comisión de protocolo por liberación, en puntos básicos (50 = 0,5%).
+    ///         Arranca en 0 (sin cobro) y el admin puede activarla hasta MAX_FEE_BIPS.
+    uint256 public feeBips;
+
+    /// @notice Dirección que recibe la comisión (tesorería). Por defecto, el admin.
+    address public tesoreria;
+
     /// @notice Propuesta de rotación de guardián (recuperación social).
     struct Rotacion {
         address viejo;          // guardián a reemplazar
@@ -127,6 +139,12 @@ contract FamilyVault {
     event ReclamoCancelado(uint256 indexed idReclamo, address indexed porQuien);
     /// @dev El admin fijó (o cambió) la meta de ahorro del fondo.
     event MetaFijada(uint256 meta);
+    /// @dev Se cobró la comisión de protocolo al liberar un reclamo (transparencia).
+    event ComisionCobrada(uint256 indexed idReclamo, address indexed tesoreria, uint256 monto);
+    /// @dev El admin cambió la comisión de protocolo (en puntos básicos).
+    event ComisionFijada(uint256 feeBips);
+    /// @dev El admin cambió la dirección de la tesorería.
+    event TesoreriaFijada(address tesoreria);
     /// @dev Recuperación social: ciclo de vida de una rotación de guardián.
     event RotacionPropuesta(uint256 indexed idRotacion, address indexed viejo, address indexed nuevo, address proponente);
     event RotacionAprobada(uint256 indexed idRotacion, address indexed guardian, uint256 aprobaciones, uint256 umbral);
@@ -188,6 +206,7 @@ contract FamilyVault {
 
         admin = msg.sender;
         umbral = _umbral;
+        tesoreria = msg.sender; // por defecto la comisión va al admin; feeBips arranca en 0
 
         // Registramos cada guardián evitando duplicados y la dirección cero.
         for (uint256 i = 0; i < _guardianes.length; i++) {
@@ -218,6 +237,21 @@ contract FamilyVault {
     function fijarMeta(uint256 _meta) external soloAdmin {
         meta = _meta;
         emit MetaFijada(_meta);
+    }
+
+    /// @notice El admin fija la comisión de protocolo (en puntos básicos, 50 = 0,5%).
+    /// @dev No puede superar MAX_FEE_BIPS (tope del código). 0 = sin comisión.
+    function fijarComision(uint256 _feeBips) external soloAdmin {
+        require(_feeBips <= MAX_FEE_BIPS, "FamilyVault: comision excede el tope");
+        feeBips = _feeBips;
+        emit ComisionFijada(_feeBips);
+    }
+
+    /// @notice El admin cambia la dirección que recibe la comisión (tesorería).
+    function fijarTesoreria(address _tesoreria) external soloAdmin {
+        require(_tesoreria != address(0), "FamilyVault: tesoreria cero");
+        tesoreria = _tesoreria;
+        emit TesoreriaFijada(_tesoreria);
     }
 
     // ───────────────────────────────────────────────────────────────────────
@@ -309,10 +343,23 @@ contract FamilyVault {
 
             // El destino es el solicitante del reclamo (quien pidió la ayuda).
             address destino = r.solicitante;
-            emit FondosLiberados(idReclamo, destino, monto);
 
-            // INTERACTION — transferencia al solicitante al final de todo.
-            (bool ok, ) = payable(destino).call{value: monto}("");
+            // Comisión de protocolo (transparente): se descuenta del monto y el
+            // resto va al solicitante. Como feeBips <= MAX_FEE_BIPS (2%), la
+            // comisión nunca puede vaciar el reclamo.
+            uint256 comision = (monto * feeBips) / 10000;
+            uint256 neto = monto - comision;
+
+            emit FondosLiberados(idReclamo, destino, neto);
+
+            // INTERACTION — primero la comisión a la tesorería (si corresponde),
+            // después el neto al solicitante. Todo después de marcar Liberado.
+            if (comision > 0 && tesoreria != address(0)) {
+                (bool okFee, ) = payable(tesoreria).call{value: comision}("");
+                require(okFee, "FamilyVault: comision fallo");
+                emit ComisionCobrada(idReclamo, tesoreria, comision);
+            }
+            (bool ok, ) = payable(destino).call{value: neto}("");
             require(ok, "FamilyVault: transferencia fallo");
         }
     }

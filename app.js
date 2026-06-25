@@ -690,6 +690,17 @@ async function refrescarFondo() {
       });
     }
 
+    // Comisión de protocolo vigente (si el contrato la soporta). Defensivo:
+    // contra una bóveda vieja sin esta función, queda oculto sin romper nada.
+    try {
+      const fb = Number(await contratoLectura.feeBips());
+      const elFee = $("side-fee");
+      if (elFee) {
+        if (fb > 0) { elFee.textContent = `Comisión de protocolo: ${(fb / 100).toFixed(2)}% por liberación`; elFee.hidden = false; }
+        else { elFee.hidden = true; }
+      }
+    } catch (_) { const elFee = $("side-fee"); if (elFee) elFee.hidden = true; }
+
     // Métricas del dashboard (cantidad de guardianes + rol de la wallet).
     const elCant = $("stat-guardianes");
     if (elCant) elCant.textContent = guardianes.length;

@@ -212,6 +212,76 @@ describe("FamilyVault", function () {
     });
   });
 
+  describe("Comisión de protocolo (monetización)", function () {
+    const MONTO = ethers.parseEther("0.5");
+
+    beforeEach(async function () {
+      await vault.connect(g1).depositar({ value: ethers.parseEther("1.0") });
+      await vault.connect(g1).crearReclamo("Emergencia medica", ethers.ZeroHash, MONTO);
+    });
+
+    it("arranca sin comisión y con la tesorería en el admin", async function () {
+      expect(await vault.feeBips()).to.equal(0n);
+      expect(await vault.tesoreria()).to.equal(admin.address);
+      expect(await vault.MAX_FEE_BIPS()).to.equal(200n);
+    });
+
+    it("solo el admin puede fijar la comisión", async function () {
+      await expect(vault.connect(g1).fijarComision(50))
+        .to.be.revertedWith("FamilyVault: solo el admin");
+      await expect(vault.connect(admin).fijarComision(50)).to.emit(vault, "ComisionFijada");
+      expect(await vault.feeBips()).to.equal(50n);
+    });
+
+    it("no permite una comisión por encima del tope (2%)", async function () {
+      await expect(vault.connect(admin).fijarComision(201))
+        .to.be.revertedWith("FamilyVault: comision excede el tope");
+    });
+
+    it("solo el admin fija la tesorería y rechaza la dirección cero", async function () {
+      await expect(vault.connect(g1).fijarTesoreria(extrano.address))
+        .to.be.revertedWith("FamilyVault: solo el admin");
+      await expect(vault.connect(admin).fijarTesoreria(ethers.ZeroAddress))
+        .to.be.revertedWith("FamilyVault: tesoreria cero");
+      await expect(vault.connect(admin).fijarTesoreria(extrano.address))
+        .to.emit(vault, "TesoreriaFijada");
+      expect(await vault.tesoreria()).to.equal(extrano.address);
+    });
+
+    it("cobra la comisión al liberar: el solicitante recibe el neto y la tesorería el fee", async function () {
+      await vault.connect(admin).fijarComision(50);             // 0,5%
+      await vault.connect(admin).fijarTesoreria(extrano.address); // tesorería = extrano (no paga gas)
+
+      const comision = (MONTO * 50n) / 10000n; // 0.0025 ETH
+      const neto = MONTO - comision;           // 0.4975 ETH
+
+      await vault.connect(g1).aprobar(0); // 1/2 (g1 paga gas acá)
+      const antesSolic = await ethers.provider.getBalance(g1.address);
+      const antesTeso = await ethers.provider.getBalance(extrano.address);
+
+      // g2 alcanza el umbral 2/2: libera el neto a g1 y la comisión a extrano.
+      await expect(vault.connect(g2).aprobar(0))
+        .to.emit(vault, "FondosLiberados").withArgs(0, g1.address, neto)
+        .and.to.emit(vault, "ComisionCobrada").withArgs(0, extrano.address, comision);
+
+      const despuesSolic = await ethers.provider.getBalance(g1.address);
+      const despuesTeso = await ethers.provider.getBalance(extrano.address);
+
+      expect(despuesSolic - antesSolic).to.equal(neto);   // solicitante recibe el neto
+      expect(despuesTeso - antesTeso).to.equal(comision);  // tesorería recibe la comisión
+      // Salió del contrato exactamente el monto (neto + comisión).
+      expect(await vault.balance()).to.equal(ethers.parseEther("0.5"));
+    });
+
+    it("con comisión en 0 el solicitante recibe el monto completo", async function () {
+      const antes = await ethers.provider.getBalance(g1.address);
+      await vault.connect(g2).aprobar(0); // g2 aprueba 1/2
+      await vault.connect(g3).aprobar(0); // g3 alcanza 2/2 y libera (g1 no paga gas)
+      const despues = await ethers.provider.getBalance(g1.address);
+      expect(despues - antes).to.equal(MONTO);
+    });
+  });
+
   describe("Recuperación social (rotación de guardianes)", function () {
     it("rota un guardián al alcanzar el umbral", async function () {
       // Reemplazar g3 por 'extrano'. Umbral 2: hace falta 2 aprobaciones.

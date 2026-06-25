@@ -136,6 +136,44 @@ const CONTRACT_ABI = [
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "idReclamo",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "tesoreria",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "monto",
+        "type": "uint256"
+      }
+    ],
+    "name": "ComisionCobrada",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "feeBips",
+        "type": "uint256"
+      }
+    ],
+    "name": "ComisionFijada",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "origen",
         "type": "address"
@@ -336,6 +374,32 @@ const CONTRACT_ABI = [
     ],
     "name": "RotacionPropuesta",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "tesoreria",
+        "type": "address"
+      }
+    ],
+    "name": "TesoreriaFijada",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_FEE_BIPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [],
@@ -545,6 +609,32 @@ const CONTRACT_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "feeBips",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_feeBips",
+        "type": "uint256"
+      }
+    ],
+    "name": "fijarComision",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -553,6 +643,19 @@ const CONTRACT_ABI = [
       }
     ],
     "name": "fijarMeta",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tesoreria",
+        "type": "address"
+      }
+    ],
+    "name": "fijarTesoreria",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -787,6 +890,19 @@ const CONTRACT_ABI = [
         "internalType": "bool",
         "name": "ejecutada",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "tesoreria",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
