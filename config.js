@@ -21,7 +21,54 @@ const NETWORK = {
   chainIdHex: "0xaa36a7", // 11155111 en hexadecimal
   nombre: "Sepolia",
   explorador: "https://sepolia.etherscan.io",
+  // RPC público de solo-lectura: se usa para mostrar los datos de una bóveda
+  // ANTES de conectar la wallet (modo lectura). Para operar se usa MetaMask.
+  rpc: "https://ethereum-sepolia-rpc.publicnode.com",
 };
+
+// ── Fábrica de bóvedas (multi-familia) ──────────────────────────────────────
+// FamilyVaultFactory permite que cualquier familia cree su propia bóveda con un
+// solo llamado (crearBoveda). Desplegá la Factory UNA vez en Sepolia y pegá su
+// dirección acá. Mientras esté en cero, "Crear bóveda nueva" mostrará una guía;
+// "Entrar a una bóveda" por dirección funciona igual sin Factory.
+const FACTORY_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+const FACTORY_ABI = [
+  {
+    "inputs": [
+      { "internalType": "address[]", "name": "guardianes", "type": "address[]" },
+      { "internalType": "uint256", "name": "umbral", "type": "uint256" }
+    ],
+    "name": "crearBoveda",
+    "outputs": [{ "internalType": "address", "name": "boveda", "type": "address" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "usuario", "type": "address" }],
+    "name": "bovedasDeUsuario",
+    "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "obtenerBovedas",
+    "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "creador", "type": "address" },
+      { "indexed": false, "internalType": "address", "name": "boveda", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "indice", "type": "uint256" }
+    ],
+    "name": "BovedaCreada",
+    "type": "event"
+  }
+];
 
 // ── Nombres de los integrantes de la familia ───────────────────────────────
 // Mapea cada dirección (en minúsculas) a un nombre legible, para que la dApp

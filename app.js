@@ -44,6 +44,218 @@ let totalLiberado = 0n;
 const $ = (id) => document.getElementById(id);
 
 // ───────────────────────────────────────────────────────────────────────────
+//  BÓVEDA ACTIVA (multi-familia) — selección de a qué contrato se conecta la app
+// ───────────────────────────────────────────────────────────────────────────
+//
+//  La app puede operar sobre CUALQUIER bóveda (no una sola fija). La dirección
+//  de la bóveda activa se guarda en localStorage. Si no hay ninguna elegida, se
+//  muestra la pantalla (gate) para crear una nueva o entrar a una por dirección.
+//  Esto es lo que permite el "uso masivo sin base de datos": cada familia tiene
+//  su contrato y la blockchain es el registro común.
+
+const LS_BOVEDA = "fv-boveda-actual";   // dirección de la bóveda activa
+const LS_RECIENTES = "fv-bovedas";      // [{address, nombre}] bóvedas usadas en este dispositivo
+
+let VAULT_ADDRESS = null;               // dirección de la bóveda activa (resuelta al iniciar)
+let nuevosMiembros = [];                // direcciones cargadas al crear una bóveda
+
+function bovedaGuardada() {
+  try { return localStorage.getItem(LS_BOVEDA); } catch (_) { return null; }
+}
+function getRecientes() {
+  try { return JSON.parse(localStorage.getItem(LS_RECIENTES) || "[]"); } catch (_) { return []; }
+}
+function guardarReciente(address, nombre) {
+  const lista = getRecientes().filter((b) => b.address.toLowerCase() !== address.toLowerCase());
+  lista.unshift({ address, nombre: nombre || "" });
+  try { localStorage.setItem(LS_RECIENTES, JSON.stringify(lista.slice(0, 8))); } catch (_) {}
+}
+function quitarReciente(address) {
+  const lista = getRecientes().filter((b) => b.address.toLowerCase() !== address.toLowerCase());
+  try { localStorage.setItem(LS_RECIENTES, JSON.stringify(lista)); } catch (_) {}
+  renderRecientes();
+}
+function setBovedaActiva(address, nombre) {
+  VAULT_ADDRESS = address;
+  try { localStorage.setItem(LS_BOVEDA, address); } catch (_) {}
+  guardarReciente(address, nombre);
+}
+
+/** Muestra el panel de la bóveda (oculta el gate) y arranca la lectura. */
+async function mostrarDashboard() {
+  $("gate").hidden = true;
+  $("app-shell").hidden = false;
+  // Datos de la bóveda en el sidebar.
+  const rec = getRecientes().find((b) => b.address.toLowerCase() === VAULT_ADDRESS.toLowerCase());
+  const nombre = (rec && rec.nombre) || "Bóveda familiar";
+  if ($("side-vault-name")) $("side-vault-name").textContent = nombre;
+  if ($("side-vault-addr")) $("side-vault-addr").textContent = acortar(VAULT_ADDRESS);
+
+  // Si la wallet ya autorizó antes este sitio, conectamos full (permite operar).
+  // Si no, mostramos la bóveda en modo lectura con un RPC público.
+  let autorizada = false;
+  if (typeof window.ethereum !== "undefined") {
+    try {
+      const cuentas = await window.ethereum.request({ method: "eth_accounts" });
+      autorizada = cuentas && cuentas.length > 0;
+    } catch (_) {}
+  }
+  if (autorizada) {
+    await conectarWallet();
+  } else {
+    await inicializarLectura();
+  }
+}
+
+/** Vuelve a la pantalla de selección de bóveda. */
+function mostrarGate() {
+  $("app-shell").hidden = true;
+  $("gate").hidden = false;
+  renderRecientes();
+}
+
+/** Inicializa la app en modo SOLO LECTURA (sin wallet) usando un RPC público. */
+async function inicializarLectura() {
+  if (!VAULT_ADDRESS) return;
+  try {
+    provider = new ethers.JsonRpcProvider(NETWORK.rpc);
+    contratoLectura = new ethers.Contract(VAULT_ADDRESS, CONTRACT_ABI, provider);
+    contrato = null;
+    soyGuardian = false;
+    cuentaActual = null;
+    habilitarControles(false);
+    await refrescarTodo();
+    mostrarAviso("Estás viendo la bóveda en modo lectura. Conectá tu wallet para depositar o aprobar.", false);
+  } catch (err) {
+    mostrarAviso("No se pudo leer la bóveda: " + mensajeDeError(err), true);
+  }
+}
+
+// ── Gate: crear / entrar a una bóveda ──────────────────────────────────────
+
+function renderRecientes() {
+  const cont = $("gate-recientes-list");
+  if (!cont) return;
+  const lista = getRecientes();
+  if (lista.length === 0) {
+    cont.innerHTML = `<p class="vacio" style="text-align:center">Todavía no usaste ninguna bóveda en este dispositivo.</p>`;
+    return;
+  }
+  cont.innerHTML = "";
+  lista.forEach((b) => {
+    const btn = document.createElement("button");
+    btn.className = "gate-reciente";
+    btn.innerHTML =
+      `<div class="gate-reciente-info"><strong>${escaparHtml(b.nombre || "Bóveda familiar")}</strong>` +
+      `<span class="mono">${b.address}</span></div>` +
+      `<svg class="ico" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>`;
+    btn.onclick = () => { setBovedaActiva(b.address, b.nombre); mostrarDashboard(); };
+    cont.appendChild(btn);
+  });
+}
+
+function renderMiembrosChips() {
+  const cont = $("miembros-chips");
+  if (!cont) return;
+  cont.innerHTML = "";
+  nuevosMiembros.forEach((dir) => {
+    const chip = document.createElement("span");
+    chip.className = "chip-addr";
+    chip.innerHTML = `${acortar(dir)} <button title="Quitar">×</button>`;
+    chip.querySelector("button").onclick = () => {
+      nuevosMiembros = nuevosMiembros.filter((d) => d !== dir);
+      renderMiembrosChips();
+      actualizarAyudaUmbral();
+    };
+    cont.appendChild(chip);
+  });
+}
+function actualizarAyudaUmbral() {
+  const help = document.querySelector("#nuevo-umbral")?.closest(".umbral-row")?.querySelector(".field-help");
+  if (help) help.textContent = `de ${nuevosMiembros.length || "—"} integrantes deben aprobar para liberar.`;
+}
+
+function agregarMiembro() {
+  const inp = $("nuevo-miembro");
+  const v = inp.value.trim();
+  if (!v) return;
+  if (!ethers.isAddress(v)) { toast("Esa dirección no es válida.", "error"); return; }
+  const norm = ethers.getAddress(v);
+  if (nuevosMiembros.some((d) => d.toLowerCase() === norm.toLowerCase())) {
+    toast("Esa wallet ya está en la lista.", "info"); inp.value = ""; return;
+  }
+  nuevosMiembros.push(norm);
+  inp.value = "";
+  renderMiembrosChips();
+  actualizarAyudaUmbral();
+}
+
+async function crearBovedaUI() {
+  ocultarAviso();
+  if (nuevosMiembros.length < 2) { toast("Agregá al menos 2 integrantes.", "error"); return; }
+  const umbral = Number($("nuevo-umbral").value);
+  if (!umbral || umbral < 1 || umbral > nuevosMiembros.length) {
+    toast(`El umbral debe estar entre 1 y ${nuevosMiembros.length}.`, "error"); return;
+  }
+  if (!FACTORY_ADDRESS || FACTORY_ADDRESS === "0x0000000000000000000000000000000000000000") {
+    mostrarGate();
+    mostrarAvisoGate(
+      "Para crear bóvedas nuevas hay que desplegar el contrato FamilyVaultFactory una vez en Sepolia y " +
+      "pegar su dirección en config.js (FACTORY_ADDRESS). Mientras tanto, podés ENTRAR a una bóveda existente por su dirección."
+    );
+    return;
+  }
+  try {
+    await conectarWallet();
+    if (!redOk) { toast("Cambiá la red a Sepolia para crear la bóveda.", "error"); return; }
+    mostrarOverlay("Creando la bóveda… confirmá en MetaMask.");
+    const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, signer);
+    const tx = await factory.crearBoveda(nuevosMiembros, umbral);
+    mostrarOverlay("Desplegando el contrato de tu familia en Sepolia…");
+    const recibo = await tx.wait();
+    // Buscamos la dirección de la bóveda recién creada en el evento BovedaCreada.
+    let nuevaDir = null;
+    for (const log of recibo.logs) {
+      try {
+        const parsed = factory.interface.parseLog(log);
+        if (parsed && parsed.name === "BovedaCreada") { nuevaDir = parsed.args.boveda; break; }
+      } catch (_) {}
+    }
+    if (!nuevaDir) { toast("La bóveda se creó pero no se pudo leer su dirección. Entrá por dirección.", "error"); return; }
+    setBovedaActiva(nuevaDir, "Mi bóveda familiar");
+    toast("¡Bóveda creada! Ya podés operar con tu familia.", "ok", 6000);
+    await mostrarDashboard();
+  } catch (err) {
+    mostrarAviso(mensajeDeError(err), true);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+function entrarBovedaUI() {
+  const v = $("entrar-direccion").value.trim();
+  if (!ethers.isAddress(v)) { toast("Pegá una dirección de contrato válida (0x…).", "error"); return; }
+  setBovedaActiva(ethers.getAddress(v), "");
+  mostrarDashboard();
+}
+
+/** Aviso dentro del gate (no del dashboard). */
+function mostrarAvisoGate(msg) {
+  let el = $("gate-aviso");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "gate-aviso";
+    el.className = "aviso";
+    el.style.margin = "0 auto 24px";
+    el.style.maxWidth = "640px";
+    const inner = document.querySelector(".gate-inner");
+    inner.insertBefore(el, inner.querySelector(".gate-grid"));
+  }
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 //  UTILIDADES DE UI
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -72,8 +284,12 @@ function toast(mensaje, tipo = "info", duracion = 4500) {
   if (!cont) return;
   const t = document.createElement("div");
   t.className = `toast toast-${tipo}`;
-  const ico = tipo === "ok" ? "✅" : tipo === "error" ? "⚠️" : "ℹ️";
-  t.innerHTML = `<span class="toast-ico">${ico}</span><span>${mensaje}</span>`;
+  const ICOS = {
+    ok: `<svg class="ico" viewBox="0 0 24 24" style="color:var(--ok)"><path d="M5 12l4 4L19 6"/></svg>`,
+    error: `<svg class="ico" viewBox="0 0 24 24" style="color:var(--danger)"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>`,
+    info: `<svg class="ico" viewBox="0 0 24 24" style="color:var(--brand)"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>`,
+  };
+  t.innerHTML = `<span class="toast-ico">${ICOS[tipo] || ICOS.info}</span><span>${mensaje}</span>`;
   cont.appendChild(t);
   // Forzamos reflow para animar la entrada.
   requestAnimationFrame(() => t.classList.add("show"));
@@ -104,7 +320,7 @@ function confetti() {
 /** Celebración cuando se liberan fondos: confeti + toast. */
 function celebrarLiberacion(montoStr, nombre) {
   confetti();
-  toast(`💸 ¡Fondos liberados! ${montoStr} ETH para ${nombre}`, "ok", 6000);
+  toast(`¡Fondos liberados! ${montoStr} ETH para ${nombre}`, "ok", 6000);
 }
 
 /** Copia un texto al portapapeles y avisa. */
@@ -156,23 +372,23 @@ function crearLiEvento(texto, txHash, fechaMs) {
 function textoDeEvento(nombre, a) {
   switch (nombre) {
     case "Deposito":
-      return `💰 Depósito de ${ethers.formatEther(a.monto)} ETH por ${nombreDe(a.origen)}`;
+      return `Depósito de ${ethers.formatEther(a.monto)} ETH por ${nombreDe(a.origen)}`;
     case "ReclamoCreado":
-      return `🚨 Reclamo #${a.idReclamo} creado por ${nombreDe(a.solicitante)} — motivo: "${escaparHtml(a.descripcion)}" (pide ${ethers.formatEther(a.monto)} ETH)`;
+      return `Reclamo #${a.idReclamo} creado por ${nombreDe(a.solicitante)} — motivo: "${escaparHtml(a.descripcion)}" (pide ${ethers.formatEther(a.monto)} ETH)`;
     case "Aprobacion":
-      return `✍️ Aprobación de ${nombreDe(a.guardian)} en reclamo #${a.idReclamo} (${a.aprobaciones}/${a.umbral})`;
+      return `Aprobación de ${nombreDe(a.guardian)} en reclamo #${a.idReclamo} (${a.aprobaciones}/${a.umbral})`;
     case "FondosLiberados":
-      return `✅ Reclamo #${a.idReclamo} LIBERADO: ${ethers.formatEther(a.monto)} ETH → ${nombreDe(a.destino)}`;
+      return `Reclamo #${a.idReclamo} LIBERADO: ${ethers.formatEther(a.monto)} ETH → ${nombreDe(a.destino)}`;
     case "ReclamoCancelado":
-      return `🚫 Reclamo #${a.idReclamo} cancelado por ${nombreDe(a.porQuien)}`;
+      return `Reclamo #${a.idReclamo} cancelado por ${nombreDe(a.porQuien)}`;
     case "MetaFijada":
-      return `🎯 Meta del fondo fijada en ${ethers.formatEther(a.meta)} ETH`;
+      return `Meta del fondo fijada en ${ethers.formatEther(a.meta)} ETH`;
     case "RotacionPropuesta":
-      return `🔁 Rotación #${a.idRotacion} propuesta por ${nombreDe(a.proponente)}: ${nombreDe(a.viejo)} → ${nombreDe(a.nuevo)}`;
+      return `Rotación #${a.idRotacion} propuesta por ${nombreDe(a.proponente)}: ${nombreDe(a.viejo)} → ${nombreDe(a.nuevo)}`;
     case "RotacionAprobada":
-      return `✍️ Rotación #${a.idRotacion} aprobada por ${nombreDe(a.guardian)} (${a.aprobaciones}/${a.umbral})`;
+      return `Rotación #${a.idRotacion} aprobada por ${nombreDe(a.guardian)} (${a.aprobaciones}/${a.umbral})`;
     case "GuardianRotado":
-      return `♻️ Guardián reemplazado: ${nombreDe(a.viejo)} → ${nombreDe(a.nuevo)}`;
+      return `Guardián reemplazado: ${nombreDe(a.viejo)} → ${nombreDe(a.nuevo)}`;
     default:
       return "Evento";
   }
@@ -370,20 +586,20 @@ async function ofrecerCambioDeRed() {
 // ───────────────────────────────────────────────────────────────────────────
 
 function contratoConfigurado() {
-  return CONTRACT_ADDRESS && CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
+  return VAULT_ADDRESS && VAULT_ADDRESS !== "0x0000000000000000000000000000000000000000";
 }
 
 async function inicializarContrato() {
   if (!contratoConfigurado()) {
     mostrarAviso(
-      "El contrato todavía no está configurado. Pegá la dirección desplegada en config.js (CONTRACT_ADDRESS).",
+      "No hay ninguna bóveda seleccionada. Volvé a la pantalla de inicio para crear o entrar a una.",
       true
     );
     return;
   }
   // Instancia para escribir (con signer) y otra para leer (con provider).
-  contrato = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-  contratoLectura = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+  contrato = new ethers.Contract(VAULT_ADDRESS, CONTRACT_ABI, signer);
+  contratoLectura = new ethers.Contract(VAULT_ADDRESS, CONTRACT_ABI, provider);
 
   habilitarControles(redOk);
   suscribirEventos();
@@ -524,7 +740,7 @@ function actualizarMeta(balance, meta) {
     fill.style.width = pct + "%";
     texto.textContent =
       `${ethers.formatEther(balance)} / ${ethers.formatEther(meta)} ETH (${pct.toFixed(1)}%)` +
-      (balance >= meta ? " — ¡Meta alcanzada! 🎉" : "");
+      (balance >= meta ? " — ¡Meta alcanzada!" : "");
   } else {
     fill.style.width = "0%";
     texto.textContent = "Sin meta fijada.";
@@ -542,12 +758,11 @@ function renderAportes(aportes) {
   }
   const max = entradas[0][1];
   ul.innerHTML = "";
-  const medallas = ["🥇", "🥈", "🥉"];
   entradas.forEach(([dir, monto], i) => {
     const pct = max > 0n ? Number((monto * 10000n) / max) / 100 : 0;
     const li = document.createElement("li");
     li.innerHTML =
-      `<div class="aporte-top"><span>${medallas[i] || "•"} <strong>${escaparHtml(nombreDe(dir))}</strong></span>` +
+      `<div class="aporte-top"><span><span class="aporte-rank">${i + 1}.</span> <strong>${escaparHtml(nombreDe(dir))}</strong></span>` +
       `<span class="mono">${ethers.formatEther(monto)} ETH</span></div>` +
       `<div class="barra"><div class="barra-fill" style="width:${pct}%"></div></div>`;
     ul.appendChild(li);
@@ -657,7 +872,7 @@ async function renderReclamo(id, datos, umbral) {
   const pct = Math.min(100, Math.round((aprobaciones / umbral) * 100));
   const fecha = creadoEn ? new Date(creadoEn * 1000).toLocaleString("es-AR") : "—";
   const evidencia = (hashEvidencia && !/^0x0+$/.test(hashEvidencia))
-    ? `<span>🔐 Hash evidencia: <span class="mono">${acortar(hashEvidencia)}</span></span>`
+    ? `<span>Hash evidencia: <span class="mono">${acortar(hashEvidencia)}</span></span>`
     : "";
 
   const esFinal = estado === 3 || estado === 4; // Liberado o Cancelado
@@ -685,9 +900,9 @@ async function renderReclamo(id, datos, umbral) {
       <span class="estado ${CLASE_ESTADO[estado]}" title="${TOOLTIP_ESTADO[estado]}">${NOMBRE_ESTADO[estado]}</span>
     </div>
     <div class="reclamo-meta">
-      <span>💵 Monto a liberar: <strong>${ethers.formatEther(monto)} ETH</strong></span>
-      <span>📤 Se libera a: <strong>${escaparHtml(nombreDe(solicitante))}</strong> <span class="mono" style="opacity:.6">${acortar(solicitante)}</span></span>
-      <span>🕒 Creado: ${fecha}</span>
+      <span>Monto a liberar: <strong>${ethers.formatEther(monto)} ETH</strong></span>
+      <span>Se libera a: <strong>${escaparHtml(nombreDe(solicitante))}</strong> <span class="mono" style="opacity:.6">${acortar(solicitante)}</span></span>
+      <span>Creado: ${fecha}</span>
       ${evidencia}
     </div>
     <div class="reclamo-foot">
@@ -897,10 +1112,12 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-proponer-rotacion").addEventListener("click", proponerRotacion);
 
   // Tema claro/oscuro. El tema ya se aplicó en <head> (anti-parpadeo);
-  // acá sincronizamos el ícono del botón y manejamos el toggle.
+  // acá sincronizamos el ícono del botón (SVG sol/luna) y manejamos el toggle.
+  const ICONO_SOL = `<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
+  const ICONO_LUNA = `<svg class="ico" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
   const sincronizarIconoTema = () => {
     const esClaro = document.documentElement.classList.contains("light");
-    $("btn-tema").textContent = esClaro ? "🌙" : "☀️";
+    $("btn-tema").innerHTML = esClaro ? ICONO_LUNA : ICONO_SOL;
   };
   sincronizarIconoTema();
   $("btn-tema").addEventListener("click", () => {
@@ -919,14 +1136,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Sidebar: resaltar el ítem activo al navegar entre secciones.
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
-      item.classList.add("active");
-    });
-  });
-
   // Vista previa del hash de evidencia mientras se escribe.
   $("input-evidencia").addEventListener("input", (e) => {
     const v = e.target.value.trim();
@@ -935,25 +1144,36 @@ document.addEventListener("DOMContentLoaded", () => {
       : "";
   });
 
-  // Aviso si el contrato no está configurado todavía.
-  if (!contratoConfigurado()) {
-    mostrarAviso(
-      "⚙️ Recordá completar CONTRACT_ADDRESS en config.js con la dirección del contrato desplegado en Sepolia.",
-      false
-    );
+  // ── Pantalla de selección de bóveda (gate) ──
+  const inpMiembro = $("nuevo-miembro");
+  if (inpMiembro) {
+    inpMiembro.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); agregarMiembro(); }
+    });
+    inpMiembro.addEventListener("blur", agregarMiembro);
   }
+  if ($("btn-crear-boveda")) $("btn-crear-boveda").addEventListener("click", crearBovedaUI);
+  if ($("btn-entrar-boveda")) $("btn-entrar-boveda").addEventListener("click", entrarBovedaUI);
+  if ($("entrar-direccion")) $("entrar-direccion").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); entrarBovedaUI(); }
+  });
+  if ($("btn-cambiar-boveda")) $("btn-cambiar-boveda").addEventListener("click", () => {
+    try { localStorage.removeItem(LS_BOVEDA); } catch (_) {}
+    VAULT_ADDRESS = null;
+    mostrarGate();
+  });
+  // Reset de los chips de ejemplo del HTML (los reemplaza el estado real).
+  nuevosMiembros = [];
+  renderMiembrosChips();
+  actualizarAyudaUmbral();
 
-  // Reconexión automática: si esta wallet ya autorizó el sitio antes, nos
-  // conectamos solos al recargar (sin abrir el popup de MetaMask). Usamos
-  // eth_accounts, que NO pide permiso (a diferencia de eth_requestAccounts).
-  if (typeof window.ethereum !== "undefined") {
-    window.ethereum
-      .request({ method: "eth_accounts" })
-      .then((cuentas) => {
-        if (cuentas && cuentas.length > 0) {
-          conectarWallet();
-        }
-      })
-      .catch(() => { /* sin permisos previos: el usuario tendrá que conectar a mano */ });
+  // ── Decidir qué pantalla mostrar al cargar ──
+  // Si ya hay una bóveda elegida en este dispositivo, vamos directo al panel
+  // (en modo lectura o conectados). Si no, mostramos el gate.
+  VAULT_ADDRESS = bovedaGuardada();
+  if (contratoConfigurado()) {
+    mostrarDashboard();
+  } else {
+    mostrarGate();
   }
 });

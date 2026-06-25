@@ -344,6 +344,7 @@ textarea { resize: vertical; }
 .aportes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
 .aportes li.vacio { color: var(--muted); }
 .aporte-top { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; margin-bottom: 5px; }
+.aporte-rank { color: var(--muted); font-weight: 700; margin-right: 2px; }
 .aportes .barra { height: 7px; }
 
 /* ── Rotación de guardianes ── */
