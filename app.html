@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FamilyVault — Panel de la bóveda</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("fv-tema") || "dark";
+        if (t === "light") document.documentElement.classList.add("light");
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ════════════════ PANTALLA: crear / entrar a una bóveda ════════════════ -->
+  <div id="gate" class="gate">
+    <div class="gate-inner">
+      <div class="gate-brand">
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs><linearGradient id="gGrad" x1="6" y1="3" x2="42" y2="45" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6366F1"/><stop offset="0.55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#A855F7"/>
+          </linearGradient></defs>
+          <path d="M24 3.5l15.5 5.8v10.4c0 9.8-6.6 17.2-15.5 21.3C15.1 36.9 8.5 29.5 8.5 19.7V9.3L24 3.5z" fill="url(#gGrad)"/>
+          <path d="M24 16.5 L17 28 M24 16.5 L31 28 M17 28 L31 28" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity="0.85"/>
+          <circle cx="24" cy="16.5" r="3.1" fill="#fff"/><circle cx="17" cy="28" r="3.1" fill="#fff"/><circle cx="31" cy="28" r="3.1" fill="#fff"/>
+        </svg>
+        <strong>FamilyVault</strong>
+      </div>
+      <h1 class="gate-title">Entrá a tu bóveda familiar</h1>
+      <p class="gate-sub">Creá una bóveda nueva para tu familia o ingresá a una existente con su dirección. Cada bóveda es un contrato independiente: no hay cuentas ni contraseñas, tu billetera es tu identidad.</p>
+
+      <div class="gate-grid">
+        <!-- Crear -->
+        <div class="gate-card">
+          <div class="gate-card-ico">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+          <h3>Crear una bóveda nueva</h3>
+          <p class="gate-card-sub">Definí los integrantes y cuántas aprobaciones harán falta para liberar fondos.</p>
+
+          <label class="field">
+            <span>Integrantes (direcciones de wallet)</span>
+            <input id="nuevo-miembro" placeholder="0x... y Enter para agregar" />
+            <small class="field-help">Agregá la wallet de cada integrante de la familia.</small>
+          </label>
+          <div id="miembros-chips" class="chip-list">
+            <span class="chip-addr">0x5eE3…0BB2 <button title="Quitar">×</button></span>
+            <span class="chip-addr">0xbB4b…A722 <button title="Quitar">×</button></span>
+            <span class="chip-addr">0xC669…0F1E <button title="Quitar">×</button></span>
+            <span class="chip-addr">0xceaF…fC6c <button title="Quitar">×</button></span>
+          </div>
+
+          <label class="field" style="margin-top:14px">
+            <span>Umbral de aprobación</span>
+            <div class="umbral-row">
+              <input id="nuevo-umbral" type="number" min="1" value="3" />
+              <span class="field-help">de 4 integrantes deben aprobar para liberar.</span>
+            </div>
+          </label>
+
+          <button id="btn-crear-boveda" class="btn btn-primary btn-block">Crear bóveda</button>
+        </div>
+
+        <!-- Entrar -->
+        <div class="gate-card">
+          <div class="gate-card-ico">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </div>
+          <h3>Entrar a una bóveda</h3>
+          <p class="gate-card-sub">Si tu familia ya creó su bóveda, pegá la dirección del contrato para acceder.</p>
+
+          <label class="field">
+            <span>Dirección de la bóveda</span>
+            <input id="entrar-direccion" placeholder="0xfcA8…4804" />
+            <small class="field-help">Te la comparte quien creó la bóveda de tu familia.</small>
+          </label>
+          <button id="btn-entrar-boveda" class="btn btn-primary btn-block">Entrar a la bóveda</button>
+
+          <div class="gate-recientes">
+            <p class="gate-recientes-label">Bóvedas recientes en este dispositivo</p>
+            <div class="gate-recientes-list">
+              <button class="gate-reciente">
+                <div class="gate-reciente-info">
+                  <strong>Familia Mosconi</strong>
+                  <span>0xfcA81001f59b6d56654bE6474776258E97674804</span>
+                </div>
+                <svg class="ico" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="gate-foot">¿No sabés cómo funciona? <a href="index.html">Volvé a la guía introductoria</a>.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════ PANEL DE LA BÓVEDA (dashboard) ════════════════ -->
+  <div class="app-shell" id="app-shell" hidden>
+
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="FamilyVault">
+            <defs><linearGradient id="fvGrad" x1="6" y1="3" x2="42" y2="45" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#6366F1"/><stop offset="0.55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#A855F7"/>
+            </linearGradient></defs>
+            <path d="M24 3.5l15.5 5.8v10.4c0 9.8-6.6 17.2-15.5 21.3C15.1 36.9 8.5 29.5 8.5 19.7V9.3L24 3.5z" fill="url(#fvGrad)"/>
+            <path d="M24 16.5 L17 28 M24 16.5 L31 28 M17 28 L31 28" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity="0.85"/>
+            <circle cx="24" cy="16.5" r="3.1" fill="#fff"/><circle cx="17" cy="28" r="3.1" fill="#fff"/><circle cx="31" cy="28" r="3.1" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="brand-text"><strong>FamilyVault</strong><span>Bóveda familiar</span></div>
+      </div>
+
+      <div class="side-card">
+        <p class="side-card-label">Bóveda actual</p>
+        <p class="side-vault-name" id="side-vault-name">Familia Mosconi</p>
+        <p class="side-vault-addr mono" id="side-vault-addr">0xfcA8…4804</p>
+        <button id="btn-cambiar-boveda" class="btn btn-ghost side-switch">Cambiar de bóveda</button>
+      </div>
+
+      <div class="side-card side-secure">
+        <p class="side-card-label">Garantías</p>
+        <ul>
+          <li><svg class="ico" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg> Liberación por consenso M de N</li>
+          <li><svg class="ico" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg> Sin custodio único</li>
+          <li><svg class="ico" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg> Auditable on-chain</li>
+          <li><svg class="ico" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg> No-custodial</li>
+        </ul>
+      </div>
+
+      <div class="sidebar-foot">
+        <div class="net-card">
+          <span class="net-dot"></span>
+          <div><strong>Red Sepolia</strong><span>Testnet de Ethereum</span></div>
+        </div>
+        <p class="muted-xs">Fondo multifirma · M de N · sin custodio único</p>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1>Panel de la bóveda</h1>
+          <p>Fondo de emergencia custodiado por la familia, liberado por consenso.</p>
+        </div>
+        <div class="wallet">
+          <button id="btn-tema" class="btn-icon" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">
+            <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </button>
+          <span id="red-badge" class="badge badge-gris" title="Red conectada">Sin conectar</span>
+          <span id="cuenta" class="cuenta" hidden></span>
+          <button id="btn-conectar" class="btn btn-primary">Conectar wallet</button>
+        </div>
+      </header>
+
+      <div id="aviso" class="aviso" hidden></div>
+
+      <main class="content">
+
+        <section id="resumen" class="stats-grid">
+          <div class="stat stat-hero">
+            <span class="stat-label">Balance custodiado</span>
+            <span id="balance" class="stat-hero-value">— ETH</span>
+            <span class="stat-hero-sub">Disponible en el fondo de emergencia</span>
+          </div>
+          <div class="stat">
+            <div class="stat-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></div>
+            <span class="stat-label">Umbral de aprobación</span>
+            <span id="umbral" class="stat-value">— de —</span>
+            <span class="stat-sub">firmas para liberar fondos</span>
+          </div>
+          <div class="stat">
+            <div class="stat-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3"/><path d="M22 19v-1a4 4 0 0 0-3-3.85"/></svg></div>
+            <span class="stat-label">Guardianes</span>
+            <span id="stat-guardianes" class="stat-value">—</span>
+            <span class="stat-sub">integrantes de la familia</span>
+          </div>
+          <div class="stat">
+            <div class="stat-ico"><svg class="ico" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L19 4M16 7l2 2M14 9l2 2"/></svg></div>
+            <span class="stat-label">Tu acceso</span>
+            <span id="mi-rol" class="pill pill-muted">Sin conectar</span>
+            <span class="stat-sub">rol de la wallet conectada</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/></svg> Meta del fondo</h2>
+              <p class="card-sub">Objetivo de ahorro que se propuso la familia.</p>
+            </div>
+            <div id="meta-control" class="meta-control" hidden>
+              <input id="input-meta" type="number" min="0" step="0.001" placeholder="Ej: 1.0" />
+              <span class="input-suffix">ETH</span>
+              <button id="btn-meta" class="btn btn-ghost">Fijar meta</button>
+            </div>
+          </div>
+          <div class="meta-bar"><div id="meta-fill" class="meta-fill" style="width:0%"></div></div>
+          <p id="meta-texto" class="meta-texto muted">Sin meta fijada.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3"/><path d="M22 19v-1a4 4 0 0 0-3-3.85"/></svg> Guardianes</h2>
+              <p class="card-sub">Quienes pueden crear y aprobar reclamos de liberación.</p>
+            </div>
+            <span class="meta-admin">Admin: <span id="admin" class="mono">—</span></span>
+          </div>
+          <ul id="lista-guardianes" class="guardianes">
+            <li class="vacio">Conectá tu wallet para ver el fondo.</li>
+          </ul>
+          <p class="nota nota-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg> Los fondos liberados se envían a quien crea el reclamo (el solicitante).</p>
+        </section>
+
+        <section id="acciones" class="cols-2">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/></svg> Depositar</h2>
+                <p class="card-sub">Cualquiera puede sumar fondos a la bóveda.</p>
+              </div>
+            </div>
+            <label class="field">
+              <span>Monto</span>
+              <div class="input-group">
+                <input id="input-deposito" type="number" min="0" step="0.001" placeholder="0.01" />
+                <span class="input-suffix">ETH</span>
+              </div>
+            </label>
+            <button id="btn-depositar" class="btn btn-primary btn-block" disabled>Depositar al fondo</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg> Reportar emergencia</h2>
+                <p class="card-sub">Solo un guardián puede abrir un reclamo.</p>
+              </div>
+            </div>
+            <label class="field">
+              <span>Descripción del evento</span>
+              <textarea id="input-descripcion" rows="2" placeholder="Ej: Accidente de tránsito, gastos médicos urgentes"></textarea>
+            </label>
+            <label class="field">
+              <span>Monto a liberar</span>
+              <div class="input-group">
+                <input id="input-monto-reclamo" type="number" min="0" step="0.001" placeholder="0.01" />
+                <span class="input-suffix">ETH</span>
+              </div>
+            </label>
+            <label class="field">
+              <span>Evidencia (opcional) — se calcula su hash localmente</span>
+              <textarea id="input-evidencia" rows="2" placeholder="Pegá un texto, link o detalle. Se hashea con keccak256."></textarea>
+              <small id="hash-preview" class="mono hash-preview"></small>
+            </label>
+            <button id="btn-crear-reclamo" class="btn btn-danger btn-block" disabled>Crear reclamo</button>
+          </div>
+        </section>
+
+        <section id="reclamos" class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg> Reclamos de liberación</h2>
+              <p class="card-sub">Cada reclamo recorre: Abierto → Pendiente → Aprobado → Liberado (o Cancelado).</p>
+            </div>
+            <button id="btn-refrescar" class="btn btn-ghost" disabled>Refrescar</button>
+          </div>
+          <div class="tabs">
+            <button class="tab active" data-filtro="activos">Activos</button>
+            <button class="tab" data-filtro="liberados">Liberados</button>
+            <button class="tab" data-filtro="cancelados">Cancelados</button>
+            <button class="tab" data-filtro="todos">Todos</button>
+          </div>
+          <div id="lista-reclamos" class="reclamos">
+            <p class="vacio">Conectá tu wallet para ver los reclamos.</p>
+          </div>
+        </section>
+
+        <section class="cols-2">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21C5 14 3 9 6 6c2-2 5-1 6 2 1-3 4-4 6-2 3 3 1 8-6 15z"/></svg> Aportes por integrante</h2>
+                <p class="card-sub">Cuánto depositó cada uno al fondo (histórico).</p>
+              </div>
+            </div>
+            <ul id="lista-aportes" class="aportes">
+              <li class="vacio">Conectá tu wallet para ver los aportes.</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg> Recuperación de guardianes</h2>
+                <p class="card-sub">Reemplazá por consenso a un guardián (ej. perdió su clave).</p>
+              </div>
+            </div>
+            <div id="rotacion-form" class="rotacion-form" hidden>
+              <label class="field">
+                <span>Reemplazar a</span>
+                <select id="rot-viejo"></select>
+              </label>
+              <label class="field">
+                <span>Por la dirección</span>
+                <input id="rot-nuevo" placeholder="0x..." />
+              </label>
+              <button id="btn-proponer-rotacion" class="btn btn-primary btn-block">Proponer rotación</button>
+            </div>
+            <ul id="lista-rotaciones" class="rotaciones">
+              <li class="vacio">Sin propuestas de rotación.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="historial" class="card">
+          <div class="card-head">
+            <div>
+              <h2 class="h2-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg> Historial de actividad</h2>
+              <p class="card-sub">Depósitos y reclamos registrados en la blockchain. No se pierde al recargar.</p>
+            </div>
+            <div class="chips">
+              <span class="chip">Depositado histórico: <strong id="stat-depositado">— ETH</strong></span>
+              <span class="chip">Liberado histórico: <strong id="stat-liberado">— ETH</strong></span>
+              <span class="chip">Reclamos: <strong id="stat-reclamos">—</strong></span>
+            </div>
+          </div>
+          <ul id="log-eventos" class="historial">
+            <li class="vacio">Conectá tu wallet para ver el historial.</li>
+          </ul>
+        </section>
+
+      </main>
+
+      <footer class="footer">
+        <span>FamilyVault — Hackathon Teoría de la Computación II</span>
+        <span>dApp educativa sobre Sepolia · liberación por consenso multifirma</span>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ════════════════ ASISTENTE IA ════════════════ -->
+  <button id="ia-fab" class="ia-fab" aria-label="Abrir asistente">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>
+    Asistente
+  </button>
+
+  <section id="ia-panel" class="ia-panel" hidden>
+    <div class="ia-head">
+      <div class="ia-head-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="ia-head-text">
+        <strong>Asistente FamilyVault</strong>
+        <span>Te explica y te guía. No mueve fondos.</span>
+      </div>
+      <button id="ia-close" class="ia-close" aria-label="Cerrar">×</button>
+    </div>
+    <div id="ia-body" class="ia-body">
+      <div class="ia-msg ia-msg-bot">
+        Hola. Soy el asistente de FamilyVault. Puedo explicarte cómo funciona la bóveda, qué significa cada estado de un reclamo, por qué es segura o cómo conectar tu billetera. ¿Qué querés saber?
+      </div>
+      <div class="ia-suggest">
+        <button class="ia-chip">¿Qué umbral me conviene?</button>
+        <button class="ia-chip">¿Qué es un reclamo?</button>
+        <button class="ia-chip">¿Es seguro?</button>
+        <button class="ia-chip">Perdí mi wallet</button>
+      </div>
+    </div>
+    <div class="ia-foot">
+      <textarea id="ia-input" rows="1" placeholder="Escribí tu pregunta…"></textarea>
+      <button id="ia-send" class="ia-send" aria-label="Enviar">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+    <p class="ia-disclaimer">El asistente solo brinda orientación. Las decisiones sobre fondos las toma siempre la familia por consenso.</p>
+  </section>
+
+  <div id="toasts" class="toasts"></div>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="spinner"></div>
+      <p id="overlay-texto">Procesando transacción…</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

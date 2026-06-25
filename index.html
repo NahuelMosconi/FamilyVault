@@ -3,294 +3,348 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FamilyVault — Bóveda Familiar de Emergencia</title>
+  <title>FamilyVault — Fondo de emergencia familiar protegido por la blockchain</title>
+  <meta name="description" content="Un fondo de ahorro de emergencia que ninguna persona sola puede vaciar y que la familia libera por consenso. Custodiado por un contrato inteligente, auditable y sin custodio único." />
   <link rel="icon" type="image/svg+xml" href="logo.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
-  <script>
-    // Aplica el tema guardado lo antes posible para evitar parpadeo.
-    // Por defecto: oscuro. Se guarda la preferencia en localStorage.
-    (function () {
-      try {
-        var t = localStorage.getItem("fv-tema") || "dark";
-        if (t === "light") document.documentElement.classList.add("light");
-      } catch (e) {}
-    })();
-  </script>
+  <link rel="stylesheet" href="landing.css" />
 </head>
 <body>
-  <div class="app-shell">
 
-    <!-- ───────────── Sidebar ───────────── -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-logo">
-          <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="FamilyVault">
+  <!-- ───────────── Barra superior ───────────── -->
+  <header class="lp-nav">
+    <div class="lp-container lp-nav-inner">
+      <a class="lp-brand" href="#inicio" aria-label="FamilyVault">
+        <span class="lp-brand-mark">
+          <svg width="34" height="34" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <defs>
-              <linearGradient id="fvGrad" x1="6" y1="3" x2="42" y2="45" gradientUnits="userSpaceOnUse">
-                <stop stop-color="#6366F1"/>
-                <stop offset="0.55" stop-color="#8B5CF6"/>
-                <stop offset="1" stop-color="#A855F7"/>
+              <linearGradient id="lpGrad" x1="6" y1="3" x2="42" y2="45" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#6366F1"/><stop offset="0.55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#A855F7"/>
               </linearGradient>
             </defs>
-            <path d="M24 3.5l15.5 5.8v10.4c0 9.8-6.6 17.2-15.5 21.3C15.1 36.9 8.5 29.5 8.5 19.7V9.3L24 3.5z" fill="url(#fvGrad)"/>
+            <path d="M24 3.5l15.5 5.8v10.4c0 9.8-6.6 17.2-15.5 21.3C15.1 36.9 8.5 29.5 8.5 19.7V9.3L24 3.5z" fill="url(#lpGrad)"/>
             <path d="M24 16.5 L17 28 M24 16.5 L31 28 M17 28 L31 28" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity="0.85"/>
-            <circle cx="24" cy="16.5" r="3.1" fill="#fff"/>
-            <circle cx="17" cy="28" r="3.1" fill="#fff"/>
-            <circle cx="31" cy="28" r="3.1" fill="#fff"/>
+            <circle cx="24" cy="16.5" r="3.1" fill="#fff"/><circle cx="17" cy="28" r="3.1" fill="#fff"/><circle cx="31" cy="28" r="3.1" fill="#fff"/>
           </svg>
-        </div>
-        <div class="brand-text">
-          <strong>FamilyVault</strong>
-          <span>Bóveda familiar</span>
-        </div>
-      </div>
-
-      <nav class="nav">
-        <a href="#resumen" class="nav-item active"><span class="nav-ico">📊</span> Resumen</a>
-        <a href="#acciones" class="nav-item"><span class="nav-ico">⚡</span> Acciones</a>
-        <a href="#reclamos" class="nav-item"><span class="nav-ico">📋</span> Reclamos</a>
-        <a href="#historial" class="nav-item"><span class="nav-ico">🧾</span> Historial</a>
+        </span>
+        <span class="lp-brand-name">FamilyVault</span>
+      </a>
+      <nav class="lp-nav-links">
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#seguridad">Seguridad</a>
+        <a href="#blockchain">¿Qué es la blockchain?</a>
+        <a href="#preguntas">Preguntas</a>
       </nav>
+      <a class="lp-btn lp-btn-primary" href="app.html">Abrir la app</a>
+    </div>
+  </header>
 
-      <div class="sidebar-foot">
-        <div class="net-card">
-          <span class="net-dot"></span>
-          <div>
-            <strong>Red Sepolia</strong>
-            <span>Testnet de Ethereum</span>
+  <main id="inicio">
+
+    <!-- ───────────── Hero ───────────── -->
+    <section class="lp-hero">
+      <div class="lp-container lp-hero-inner">
+        <div class="lp-hero-copy">
+          <span class="lp-eyebrow">Fondo de emergencia familiar · No-custodial</span>
+          <h1>El ahorro de emergencia que <span class="lp-grad">ninguna persona sola</span> puede vaciar.</h1>
+          <p class="lp-lead">
+            FamilyVault es un fondo familiar custodiado por un contrato inteligente.
+            El dinero solo se libera cuando un mínimo de integrantes lo aprueba.
+            Sin banco, sin custodio único, y con cada movimiento registrado de forma
+            transparente e imposible de alterar.
+          </p>
+          <div class="lp-hero-cta">
+            <a class="lp-btn lp-btn-primary lp-btn-lg" href="app.html">Crear o entrar a una bóveda</a>
+            <a class="lp-btn lp-btn-ghost lp-btn-lg" href="#como-funciona">Ver cómo funciona</a>
           </div>
+          <ul class="lp-trust">
+            <li>
+              <svg viewBox="0 0 24 24" class="lp-ico-xs"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>
+              Sin custodio único
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" class="lp-ico-xs"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg>
+              Auditable on-chain
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" class="lp-ico-xs"><path d="M8 11V7a4 4 0 1 1 8 0v4M6 11h12v9H6z"/></svg>
+              Liberación por consenso
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" class="lp-ico-xs"><path d="M5 12l4 4L19 6"/></svg>
+              Código abierto
+            </li>
+          </ul>
         </div>
-        <p class="muted-xs">Fondo multifirma · M de N · sin custodio único</p>
+
+        <!-- Tarjeta visual del hero -->
+        <aside class="lp-hero-card" aria-hidden="true">
+          <div class="lp-vault-card">
+            <div class="lp-vault-top">
+              <span class="lp-vault-label">Bóveda familiar</span>
+              <span class="lp-vault-net"><i></i>Sepolia</span>
+            </div>
+            <div class="lp-vault-balance">
+              <span>Balance custodiado</span>
+              <strong>1.25 ETH</strong>
+            </div>
+            <div class="lp-vault-row">
+              <span>Umbral de aprobación</span><strong>3 de 4</strong>
+            </div>
+            <div class="lp-vault-approvals">
+              <div class="lp-appr lp-appr-on"></div>
+              <div class="lp-appr lp-appr-on"></div>
+              <div class="lp-appr lp-appr-on"></div>
+              <div class="lp-appr"></div>
+            </div>
+            <div class="lp-vault-claim">
+              <div class="lp-vault-claim-head">
+                <span class="lp-state lp-state-ok">Liberado</span>
+                <span class="lp-vault-claim-amt">0.50 ETH</span>
+              </div>
+              <p>Gastos médicos urgentes — aprobado por la familia.</p>
+            </div>
+          </div>
+        </aside>
       </div>
-    </aside>
+    </section>
 
-    <!-- ───────────── Main ───────────── -->
-    <div class="main">
-
-      <header class="topbar">
-        <div class="topbar-title">
-          <h1>Panel de la bóveda</h1>
-          <p>Fondo de emergencia custodiado por la familia, liberado por consenso.</p>
+    <!-- ───────────── El problema ───────────── -->
+    <section class="lp-section lp-section-alt" id="problema">
+      <div class="lp-container">
+        <span class="lp-kicker">El problema</span>
+        <h2 class="lp-h2">Guardar plata en común obliga a elegir entre confiar de más o no proteger nada.</h2>
+        <div class="lp-problem-grid">
+          <article class="lp-problem">
+            <h3>Cuenta bancaria compartida</h3>
+            <p>Cualquiera de los titulares puede vaciarla solo, sin avisar. Cero protección frente al mal uso o la presión.</p>
+          </article>
+          <article class="lp-problem">
+            <h3>Efectivo en casa</h3>
+            <p>Inseguro frente a robo, pérdida o incendio. No deja registro y no rinde nada.</p>
+          </article>
+          <article class="lp-problem">
+            <h3>Un único custodio de confianza</h3>
+            <p>Si esa persona desaparece, abusa o es presionada, el fondo se pierde. Un solo punto de falla.</p>
+          </article>
         </div>
-        <div class="wallet">
-          <button id="btn-tema" class="btn-icon" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">☀️</button>
-          <span id="red-badge" class="badge badge-gris" title="Red conectada">Sin conectar</span>
-          <span id="cuenta" class="cuenta" hidden></span>
-          <button id="btn-conectar" class="btn btn-primary">Conectar wallet</button>
+      </div>
+    </section>
+
+    <!-- ───────────── Cómo funciona ───────────── -->
+    <section class="lp-section" id="como-funciona">
+      <div class="lp-container">
+        <span class="lp-kicker">Cómo funciona</span>
+        <h2 class="lp-h2">Cuatro pasos, todo registrado en la blockchain.</h2>
+        <p class="lp-section-lead">No hace falta que la familia esté en el mismo lugar: cada integrante participa desde su propio celular o computadora.</p>
+
+        <ol class="lp-steps">
+          <li class="lp-step">
+            <span class="lp-step-num">1</span>
+            <span class="lp-step-ico">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>
+            </span>
+            <h3>Crear la bóveda</h3>
+            <p>Un integrante define quiénes son los miembros de la familia y cuántas aprobaciones harán falta para liberar fondos (por ejemplo, 3 de 4).</p>
+          </li>
+          <li class="lp-step">
+            <span class="lp-step-num">2</span>
+            <span class="lp-step-ico">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            <h3>Depositar</h3>
+            <p>Cualquiera suma fondos al ahorro común. El dinero queda guardado por el contrato, no por una persona.</p>
+          </li>
+          <li class="lp-step">
+            <span class="lp-step-num">3</span>
+            <span class="lp-step-ico">
+              <svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>
+            </span>
+            <h3>Reportar una emergencia</h3>
+            <p>Un integrante abre un pedido describiendo qué pasó y cuánto necesita. Ese pedido recorre una serie de estados controlados.</p>
+          </li>
+          <li class="lp-step">
+            <span class="lp-step-num">4</span>
+            <span class="lp-step-ico">
+              <svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>
+            </span>
+            <h3>Liberar por consenso</h3>
+            <p>Cuando se alcanza el mínimo de aprobaciones, el contrato libera los fondos automáticamente a quien lo pidió. Nadie puede hacerlo solo.</p>
+          </li>
+        </ol>
+
+        <div class="lp-flow">
+          <span class="lp-flow-node">Abierto</span>
+          <span class="lp-flow-arrow">→</span>
+          <span class="lp-flow-node">Pendiente</span>
+          <span class="lp-flow-arrow">→</span>
+          <span class="lp-flow-node">Aprobado</span>
+          <span class="lp-flow-arrow">→</span>
+          <span class="lp-flow-node lp-flow-node-ok">Liberado</span>
         </div>
-      </header>
+      </div>
+    </section>
 
-      <div id="aviso" class="aviso" hidden></div>
+    <!-- ───────────── Seguridad ───────────── -->
+    <section class="lp-section lp-section-alt" id="seguridad">
+      <div class="lp-container">
+        <span class="lp-kicker">Por qué es seguro</span>
+        <h2 class="lp-h2">La seguridad no se basa en esconder nada, sino en matemática y consenso.</h2>
 
-      <main class="content">
+        <div class="lp-pillars">
+          <article class="lp-pillar">
+            <span class="lp-pillar-ico">
+              <svg viewBox="0 0 24 24"><path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="5" y="11" width="14" height="10" rx="2"/></svg>
+            </span>
+            <h3>Consenso M de N</h3>
+            <p>Hacen falta varias aprobaciones para mover el dinero. Ni un integrante solo, ni una minoría, ni siquiera quien creó la bóveda puede liberar fondos por su cuenta.</p>
+          </article>
+          <article class="lp-pillar">
+            <span class="lp-pillar-ico">
+              <svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+            </span>
+            <h3>Firma criptográfica</h3>
+            <p>Cada aprobación se firma con la clave privada del integrante, que nunca sale de su dispositivo. Falsificar la firma de otro es imposible en la práctica.</p>
+          </article>
+          <article class="lp-pillar">
+            <span class="lp-pillar-ico">
+              <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <h3>Transparencia total</h3>
+            <p>Cada depósito, pedido, aprobación y liberación queda grabado de forma pública y permanente. Cualquier integrante puede auditar todo, en cualquier momento.</p>
+          </article>
+        </div>
 
-        <!-- ───────── Métricas ───────── -->
-        <section id="resumen" class="stats-grid">
-          <div class="stat stat-hero">
-            <span class="stat-label">Balance custodiado</span>
-            <span id="balance" class="stat-hero-value">— ETH</span>
-            <span class="stat-hero-sub">Disponible en el fondo de emergencia</span>
+        <div class="lp-explainer">
+          <div class="lp-explainer-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
           </div>
-          <div class="stat">
-            <div class="stat-ico">✅</div>
-            <span class="stat-label">Umbral de aprobación</span>
-            <span id="umbral" class="stat-value">— de —</span>
-            <span class="stat-sub">firmas para liberar fondos</span>
+          <div class="lp-explainer-body">
+            <h3>¿Y si alguien consigue la dirección de mi bóveda?</h3>
+            <p>
+              No pasa nada. La dirección de una bóveda es <strong>pública a propósito</strong>, igual que un alias o CBU bancario:
+              que alguien lo conozca no le permite sacar dinero. Para hacer cualquier cosa hay que firmar con la clave privada
+              de una wallet que esté <strong>registrada como integrante</strong>, y esa firma no se puede falsificar.
+              Y aunque robaran una clave, no alcanza: se necesita el <strong>consenso de varios</strong> para liberar fondos.
+            </p>
           </div>
-          <div class="stat">
-            <div class="stat-ico">👥</div>
-            <span class="stat-label">Guardianes</span>
-            <span id="stat-guardianes" class="stat-value">—</span>
-            <span class="stat-sub">integrantes de la familia</span>
-          </div>
-          <div class="stat">
-            <div class="stat-ico">🔑</div>
-            <span class="stat-label">Tu acceso</span>
-            <span id="mi-rol" class="pill pill-muted">Sin conectar</span>
-            <span class="stat-sub">rol de la wallet conectada</span>
-          </div>
-        </section>
+        </div>
+      </div>
+    </section>
 
-        <!-- ───────── Meta del fondo ───────── -->
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <h2>🎯 Meta del fondo</h2>
-              <p class="card-sub">Objetivo de ahorro que se propuso la familia.</p>
-            </div>
-            <div id="meta-control" class="meta-control" hidden>
-              <input id="input-meta" type="number" min="0" step="0.001" placeholder="Ej: 1.0" />
-              <span class="input-suffix">ETH</span>
-              <button id="btn-meta" class="btn btn-ghost">Fijar meta</button>
-            </div>
-          </div>
-          <div class="meta-bar"><div id="meta-fill" class="meta-fill" style="width:0%"></div></div>
-          <p id="meta-texto" class="meta-texto muted">Sin meta fijada.</p>
-        </section>
+    <!-- ───────────── ¿Qué es la blockchain? ───────────── -->
+    <section class="lp-section" id="blockchain">
+      <div class="lp-container">
+        <span class="lp-kicker">Para quienes no conocen cripto</span>
+        <h2 class="lp-h2">¿Qué es la blockchain, en palabras simples?</h2>
+        <p class="lp-section-lead">No necesitás saber nada de tecnología para usar FamilyVault. Pero si te da curiosidad, acá va la idea en tres conceptos.</p>
 
-        <!-- ───────── Guardianes ───────── -->
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <h2>Guardianes</h2>
-              <p class="card-sub">Quienes pueden crear y aprobar reclamos de liberación.</p>
-            </div>
-            <span class="meta-admin">Admin: <span id="admin" class="mono">—</span></span>
-          </div>
-          <ul id="lista-guardianes" class="guardianes">
-            <li class="vacio">Conectá tu wallet para ver el fondo.</li>
-          </ul>
-          <p class="nota">📤 Los fondos liberados se envían a quien crea el reclamo (el solicitante).</p>
-        </section>
+        <div class="lp-concepts">
+          <article class="lp-concept">
+            <span class="lp-concept-num">01</span>
+            <h3>Un cuaderno compartido</h3>
+            <p>Imaginá un cuaderno de cuentas que todos los integrantes tienen igual y al mismo tiempo. Cuando se anota algo, aparece en la copia de todos. Eso es la blockchain: una base de datos compartida.</p>
+          </article>
+          <article class="lp-concept">
+            <span class="lp-concept-num">02</span>
+            <h3>Nadie lo controla solo</h3>
+            <p>Ese cuaderno no lo guarda un banco ni una empresa. Lo mantienen miles de computadoras en el mundo. Por eso nadie puede borrar, censurar ni cambiar lo que ya se escribió.</p>
+          </article>
+          <article class="lp-concept">
+            <span class="lp-concept-num">03</span>
+            <h3>Las reglas se cumplen solas</h3>
+            <p>Un "contrato inteligente" es un programa que vive en ese cuaderno y ejecuta reglas sin que nadie pueda saltárselas. En FamilyVault, la regla es: "liberar solo con el consenso de la familia".</p>
+          </article>
+        </div>
 
-        <!-- ───────── Acciones ───────── -->
-        <section id="acciones" class="cols-2">
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>💰 Depositar</h2>
-                <p class="card-sub">Cualquiera puede sumar fondos a la bóveda.</p>
-              </div>
-            </div>
-            <label class="field">
-              <span>Monto</span>
-              <div class="input-group">
-                <input id="input-deposito" type="number" min="0" step="0.001" placeholder="0.01" />
-                <span class="input-suffix">ETH</span>
-              </div>
-            </label>
-            <button id="btn-depositar" class="btn btn-primary btn-block" disabled>Depositar al fondo</button>
-          </div>
+        <div class="lp-note-box">
+          <p><strong>Importante:</strong> esta versión funciona sobre <strong>Sepolia</strong>, una red de prueba de Ethereum. El dinero que se usa es de práctica (sin valor real), pensado para demostrar cómo funciona el sistema de forma segura.</p>
+        </div>
+      </div>
+    </section>
 
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>🚨 Reportar emergencia</h2>
-                <p class="card-sub">Solo un guardián puede abrir un reclamo.</p>
-              </div>
-            </div>
-            <label class="field">
-              <span>Descripción del evento</span>
-              <textarea id="input-descripcion" rows="2" placeholder="Ej: Accidente de tránsito, gastos médicos urgentes"></textarea>
-            </label>
-            <label class="field">
-              <span>Monto a liberar</span>
-              <div class="input-group">
-                <input id="input-monto-reclamo" type="number" min="0" step="0.001" placeholder="0.01" />
-                <span class="input-suffix">ETH</span>
-              </div>
-            </label>
-            <label class="field">
-              <span>Evidencia (opcional) — se calcula su hash localmente</span>
-              <textarea id="input-evidencia" rows="2" placeholder="Pegá un texto, link o detalle. Se hashea con keccak256."></textarea>
-              <small id="hash-preview" class="mono hash-preview"></small>
-            </label>
-            <button id="btn-crear-reclamo" class="btn btn-danger btn-block" disabled>Crear reclamo</button>
-          </div>
-        </section>
+    <!-- ───────────── Para quién es ───────────── -->
+    <section class="lp-section lp-section-alt" id="para-quien">
+      <div class="lp-container">
+        <span class="lp-kicker">Para quién es</span>
+        <h2 class="lp-h2">Pensado para familias reales, especialmente las que están lejos.</h2>
+        <div class="lp-audience">
+          <article class="lp-aud">
+            <h3>Familias separadas por distancia</h3>
+            <p>Migrantes, hijos estudiando en otra ciudad o país. Pueden custodiar y liberar un fondo común sin viajar ni depender de un intermediario.</p>
+          </article>
+          <article class="lp-aud">
+            <h3>Grupos que ahorran juntos</h3>
+            <p>Hermanos, parejas, grupos de cuidado. Cualquier conjunto de personas que quiera un ahorro de emergencia con reglas claras y compartidas.</p>
+          </article>
+          <article class="lp-aud">
+            <h3>Quienes desconfían de un único responsable</h3>
+            <p>Si nadie quiere darle todo el poder a una sola persona, el consenso reparte la decisión entre todos de forma justa y verificable.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-        <!-- ───────── Reclamos ───────── -->
-        <section id="reclamos" class="card">
-          <div class="card-head">
-            <div>
-              <h2>📋 Reclamos de liberación</h2>
-              <p class="card-sub">Cada reclamo recorre: Abierto → Pendiente → Aprobado → Liberado (o Cancelado).</p>
-            </div>
-            <button id="btn-refrescar" class="btn btn-ghost" disabled>↻ Refrescar</button>
-          </div>
-          <div class="tabs">
-            <button class="tab active" data-filtro="activos">Activos</button>
-            <button class="tab" data-filtro="liberados">Liberados</button>
-            <button class="tab" data-filtro="cancelados">Cancelados</button>
-            <button class="tab" data-filtro="todos">Todos</button>
-          </div>
-          <div id="lista-reclamos" class="reclamos">
-            <p class="vacio">Conectá tu wallet para ver los reclamos.</p>
-          </div>
-        </section>
+    <!-- ───────────── Preguntas frecuentes ───────────── -->
+    <section class="lp-section" id="preguntas">
+      <div class="lp-container lp-faq-container">
+        <span class="lp-kicker">Preguntas frecuentes</span>
+        <h2 class="lp-h2">Lo que casi todos preguntan.</h2>
 
-        <!-- ───────── Aportes + Recuperación ───────── -->
-        <section class="cols-2">
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>💞 Aportes por integrante</h2>
-                <p class="card-sub">Cuánto depositó cada uno al fondo (histórico).</p>
-              </div>
-            </div>
-            <ul id="lista-aportes" class="aportes">
-              <li class="vacio">Conectá tu wallet para ver los aportes.</li>
-            </ul>
-          </div>
+        <div class="lp-faq">
+          <details class="lp-faq-item">
+            <summary>¿Necesito saber de criptomonedas para usarlo?</summary>
+            <p>No. Solo necesitás una billetera digital (como MetaMask) y seguir los pasos guiados. La app te acompaña, y un asistente integrado responde tus dudas en lenguaje simple.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>¿Pueden robar el dinero del fondo?</summary>
+            <p>Para sacar fondos hay que reunir el mínimo de aprobaciones firmadas por los integrantes. Una sola clave robada no alcanza. La seguridad está en el consenso, no en un secreto.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>¿Qué pasa si pierdo el acceso a mi billetera?</summary>
+            <p>El resto de la familia puede reemplazar tu acceso por uno nuevo mediante una "recuperación social", que también requiere el consenso del grupo. El fondo no se pierde.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>¿Hay que pagar algo?</summary>
+            <p>Esta versión corre sobre una red de prueba, así que el costo es prácticamente nulo y el dinero es de práctica. La idea es demostrar el funcionamiento sin riesgo.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>¿Dos familias distintas pueden usarlo a la vez?</summary>
+            <p>Sí. Cada familia crea su propia bóveda independiente y aislada. Los fondos de una son inaccesibles para la otra. No hay una base de datos central: todo vive en la blockchain.</p>
+          </details>
+          <details class="lp-faq-item">
+            <summary>¿El producto usa inteligencia artificial para decidir?</summary>
+            <p>No. Las decisiones sobre el dinero las toman siempre las personas, por consenso. La IA es únicamente un asistente que explica y guía; nunca mueve fondos ni aprueba pedidos.</p>
+          </details>
+        </div>
+      </div>
+    </section>
 
-          <div class="card">
-            <div class="card-head">
-              <div>
-                <h2>🔁 Recuperación de guardianes</h2>
-                <p class="card-sub">Reemplazá por consenso a un guardián (ej. perdió su clave).</p>
-              </div>
-            </div>
-            <div id="rotacion-form" class="rotacion-form" hidden>
-              <label class="field">
-                <span>Reemplazar a</span>
-                <select id="rot-viejo"></select>
-              </label>
-              <label class="field">
-                <span>Por la dirección</span>
-                <input id="rot-nuevo" placeholder="0x..." />
-              </label>
-              <button id="btn-proponer-rotacion" class="btn btn-primary btn-block">Proponer rotación</button>
-            </div>
-            <ul id="lista-rotaciones" class="rotaciones">
-              <li class="vacio">Sin propuestas de rotación.</li>
-            </ul>
-          </div>
-        </section>
+    <!-- ───────────── CTA final ───────────── -->
+    <section class="lp-cta">
+      <div class="lp-container lp-cta-inner">
+        <h2>Protegé el ahorro de tu familia, sin entregárselo a nadie.</h2>
+        <p>Creá una bóveda en minutos o entrá a la de tu familia con su dirección.</p>
+        <a class="lp-btn lp-btn-light lp-btn-lg" href="app.html">Abrir la app</a>
+      </div>
+    </section>
+  </main>
 
-        <!-- ───────── Historial ───────── -->
-        <section id="historial" class="card">
-          <div class="card-head">
-            <div>
-              <h2>🧾 Historial de actividad</h2>
-              <p class="card-sub">Depósitos y reclamos registrados en la blockchain. No se pierde al recargar.</p>
-            </div>
-            <div class="chips">
-              <span class="chip">Depositado histórico: <strong id="stat-depositado">— ETH</strong></span>
-              <span class="chip">Liberado histórico: <strong id="stat-liberado">— ETH</strong></span>
-              <span class="chip">Reclamos: <strong id="stat-reclamos">—</strong></span>
-            </div>
-          </div>
-          <ul id="log-eventos" class="historial">
-            <li class="vacio">Conectá tu wallet para ver el historial.</li>
-          </ul>
-        </section>
-
-      </main>
-
-      <footer class="footer">
-        <span>FamilyVault — Hackathon Teoría de la Computación II</span>
-        <span>dApp educativa sobre Sepolia · liberación por consenso multifirma</span>
-      </footer>
+  <!-- ───────────── Footer ───────────── -->
+  <footer class="lp-footer">
+    <div class="lp-container lp-footer-inner">
+      <div class="lp-footer-brand">
+        <span class="lp-brand-name">FamilyVault</span>
+        <p>Fondo de emergencia familiar custodiado por un contrato inteligente. Liberación por consenso multifirma, auditable y sin custodio único.</p>
+      </div>
+      <div class="lp-footer-meta">
+        <span>Proyecto académico · Teoría de la Computación II</span>
+        <span>Funciona sobre la testnet Sepolia de Ethereum · dApp no-custodial</span>
+      </div>
     </div>
-  </div>
+  </footer>
 
-  <!-- Notificaciones (toasts) y confeti -->
-  <div id="toasts" class="toasts"></div>
-  <div id="confetti" class="confetti" aria-hidden="true"></div>
-
-  <!-- Overlay de carga -->
-  <div id="overlay" class="overlay" hidden>
-    <div class="overlay-card">
-      <div class="spinner"></div>
-      <p id="overlay-texto">Procesando transacción…</p>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
